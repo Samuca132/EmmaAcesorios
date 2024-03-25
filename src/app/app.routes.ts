@@ -14,15 +14,15 @@ import { LoginComponent } from './Componentes/login/login.component';
 
 
 export const routes: Routes = [
-    { path: '', pathMatch: 'full', redirectTo: 'Index' },
-    { path: 'Index' ,component:IndexComponent},
-    { path: 'Ventas' ,component:VentasComponent},
-    { path: 'Canjes' ,component:CanjesComponent},
-    { path: 'Compras' ,component:ComprasComponent},
-    { path: 'Productos' ,component:ProductosComponent},
-    { path: 'Clientes' ,component:ClientesComponent},
-    { path: 'Insumos' ,component:InsumosComponent},
-    { path: 'Editar/:tabla/:id' ,component:EditarComponent},
-    { path: 'Añadir/:tabla' ,component:AddComponent},
-    { path: 'login/:Status' ,component:LoginComponent},
+    { path: '', pathMatch: 'full', redirectTo: 'login' },
+    { path: 'Index', component: IndexComponent,canActivate: [AuthGuard]  },
+    { path: 'Ventas', component: VentasComponent, canActivate: [AuthGuard] },
+    { path: 'Canjes', component: CanjesComponent, canActivate: [AuthGuard] },
+    { path: 'Compras', component: ComprasComponent, canActivate: [AuthGuard] },
+    { path: 'Productos', component: ProductosComponent, canActivate: [AuthGuard] },
+    { path: 'Clientes', component: ClientesComponent, canActivate: [AuthGuard] },
+    { path: 'Insumos', component: InsumosComponent, canActivate: [AuthGuard] },
+    { path: 'Editar/:tabla/:id', component: EditarComponent, canActivate: [AuthGuard] },
+    { path: 'Añadir/:tabla', component: AddComponent, canActivate: [AuthGuard] },
+    { path: 'login', component: LoginComponent },
 ];
