@@ -1,0 +1,53 @@
+<app-navbar></app-navbar>
+<div class="firstRow">
+    <div class="buttonsSections">
+      <a *ngIf="mostrarBotonNuevaVenta" type="button" class="btn btnStyle" href="Añadir/venta" id="btn1">Nueva venta</a>
+      <select class="btnStyle" id="btn2" name="pais" placeholder="hola" (change)="selectFilter($event)">
+        <option value="0">Filtrar</option>
+        <option value="1">Cliente</option>
+        <option value="2">Producto</option>
+        <option value="3">Ciudad</option>
+    </select>
+    <select *ngIf="filtrarPorCliente" class="btnStyle" id="btn3" name="pais" placeholder="hola" (change)="filtrarVentasPorCliente($event)">
+        <option value="0">...</option>
+        <option *ngFor="let cliente of clientes" [value]="cliente.IDCliente">{{cliente.nombreCliente}}</option>
+    </select>
+    <select *ngIf="filtrarPorProducto" class="btnStyle" id="btn4" name="pais" placeholder="hola" (change)="filtrarVentasPorProducto($event)">
+        <option value="0">...</option>
+        <option *ngFor="let producto of productos" [value]="producto.IDProducto">{{producto.NombreProducto}}</option>
+    </select>
+    <select *ngIf="filtrarPorCiudad" class="btnStyle" id="btn4" name="pais" placeholder="hola" (change)="filtrarVentasPorCiudad($event)">
+        <option value="0">...</option>
+        <option *ngFor="let ciudad of ciudades" [value]="ciudad.IDCiudad">{{ciudad.NombreCiudad}}</option>
+    </select>
+    
+    </div>
+
+</div>
+
+<div class="scrollbar-container" style="height: 82vh; overflow-y: auto;">
+    <table class="table table-primary">
+        <thead>
+            <tr class="custom-table">
+                <th scope="col">Fecha</th>
+                <th scope="col">Cliente</th>
+                <th scope="col">Producto</th>
+                <th scope="col">Cantidad</th>
+                <th scope="col">Ingreso</th>
+                <th scope="col">Total</th>
+            </tr>
+        </thead>
+        
+        <tbody>
+            <div class="separador"></div>
+            <tr *ngFor="let venta of Ventas; let iControl = index" class="{{ venta.nombreCliente}}">
+                <td>{{ venta.fechaVenta }}</td>
+                <td>{{ venta.nombreCliente}}</td>
+                <td>{{ venta.NombreProducto}}</td>
+                <td>{{ venta.CantidadProducto}}</td>
+                <td>${{ venta.profit}}</td>
+                <td>${{ venta.Total}}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

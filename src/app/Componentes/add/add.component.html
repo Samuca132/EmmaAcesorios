@@ -1,0 +1,335 @@
+<app-navbar></app-navbar>
+
+<div [ngSwitch]="opcion">
+<div class="card" *ngSwitchCase="'venta'">
+    <div class="card-header">
+        Nueva venta
+    </div>
+    <div class="card-body">
+        <form [formGroup]="formularioMultiuso" (ngSubmit)="enviarDatos()">
+            <div class="mb-3">
+                <label for="cliente" class="form-label">cliente</label>
+                <select formControlName="IDCliente" class="form-select">
+                        <option *ngFor="let cliente of clientes" [value]="cliente.IDCliente">{{cliente.nombreCliente}}</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Cantidad</label>
+                <br>
+                <input type="number"  formControlName="CantidadProducto" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="productos" class="form-label">Producto</label>
+                <select formControlName="IDProducto" class="form-select">
+                    <option *ngFor="let producto of productos" [value]="producto.IDProducto">{{producto.NombreProducto}}</option>
+                </select>
+            </div>
+            <div class="btn-group" role="group" aria-label="Button group name">
+                <button type="submit" class="btn btn-success">
+                    agregar
+                </button>
+                
+                <a href="Index" type="button" class="btn btn-primary">
+                    Cancelar
+                </a>
+                
+            </div>
+        </form>
+    </div>
+</div>
+<div class="card" *ngSwitchCase="'compra'">
+    <div class="card-header">
+        Nueva compra
+    </div>
+    <div class="card-body">
+        <form [formGroup]="formularioMultiuso" (ngSubmit)="enviarDatos()">
+            <div class="mb-3">
+                <label for="cliente" class="form-label">Proveedor</label>
+                <select formControlName="IDProveedor" class="form-select">
+                        <option *ngFor="let proveedor of proveedores" [value]="proveedor.IDProveedor">{{proveedor.nombre}}</option>
+                </select>
+                <br>
+                <a href="Añadir/proveedor" type="button" class="btn btn-primary">
+                    Agregar proveedor
+                </a>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Cantidad</label>
+                <br>
+                <input type="number"  formControlName="CantidadCompra" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="productos" class="form-label">Insumo</label>
+                <select formControlName="IDInsumo" class="form-select">
+                    <option *ngFor="let insumo of insumos" [value]="insumo.IDInsumo">{{insumo.NombreInsumo}}</option>
+                </select>
+            </div>
+            <div class="btn-group" role="group" aria-label="Button group name">
+                <button type="submit" class="btn btn-success">
+                    agregar
+                </button>
+                
+                <a href="Index" type="button" class="btn btn-primary">
+                    Cancelar
+                </a>
+                
+            </div>
+        </form>
+    </div>
+</div>
+<div class="card" *ngSwitchCase="'canje'">
+    <div class="card-header">
+        Nuevo Canje
+    </div>
+    <div class="card-body">
+        <form [formGroup]="formularioMultiuso" (ngSubmit)="enviarDatos()">
+            <div class="mb-3">
+                <label for="cliente" class="form-label">Proveedor</label>
+                <select formControlName="IDProveedor" class="form-select">
+                        <option *ngFor="let proveedor of proveedores" [value]="proveedor.IDProveedor">{{proveedor.nombre}}</option>
+                </select>
+                <br>
+                <a href="Añadir/proveedor" type="button" class="btn btn-primary">
+                    Agregar proveedor
+                </a>
+            </div>
+            <div class="mb-3">
+                <label for="productos" class="form-label">Insumo</label>
+                <select formControlName="IDInsumo" class="form-select">
+                    <option *ngFor="let insumo of insumos" [value]="insumo.IDInsumo">{{insumo.NombreInsumo}}</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Ingreso de Insumo</label>
+                <br>
+                <input type="number"  formControlName="CantidadInsumo" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Descuento de Insumo (en porcentaje)</label>
+                <br>
+                <input type="number"  formControlName="DescuentoInsumo" min="0"  max="100">
+            </div>
+            <div class="mb-3">
+                <label for="productos" class="form-label">Producto</label>
+                <select formControlName="IDProducto" class="form-select">
+                    <option *ngFor="let producto of productos" [value]="producto.IDProducto">{{producto.NombreProducto}}</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Entrega de Producto</label>
+                <br>
+                <input type="number"  formControlName="CantidadProducto" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Descuento de producto (en porcentaje)</label>
+                <br>
+                <input type="number"  formControlName="DescuentoProducto" min="0"  max="100">
+            </div>
+            <div class="btn-group" role="group" aria-label="Button group name">
+                <button type="submit" class="btn btn-success">
+                    agregar
+                </button>
+                
+                <a href="Index" type="button" class="btn btn-primary">
+                    Cancelar
+                </a>
+                
+            </div>
+        </form>
+    </div>
+</div>
+<div class="card" *ngSwitchCase="'producto'">
+    <div class="card-header">
+        Nuevo producto
+    </div>
+    <div class="card-body">
+        <form [formGroup]="formularioMultiuso" (ngSubmit)="enviarDatos()" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="cliente" class="form-label">Nombre producto</label>
+                <br>
+                <input type="text"  formControlName="NombreProducto">
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Coste de producción</label>
+                <br>
+                <input type="number"  formControlName="CosteProduccion" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Precio</label>
+                <br>
+                <input type="number"  formControlName="PrecioProducto" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="imagen" class="form-label">Imagen</label>
+                <br>
+                <img class="preview-image" [src]="selectedFile" alt="">
+                <input type="file" accept="image/*"   style="margin-top: 10px;" class="form-control" id="imagen" (change)="onFileChange($event)"/>
+            </div>
+            <div class="btn-group" role="group" aria-label="Button group name">
+                <button type="submit" [disabled]="bloquearComponente" class="btn btn-success">
+                    agregar
+                </button>
+                
+                <a href="Index" type="button" class="btn btn-primary">
+                    Cancelar
+                </a>
+                
+            </div>
+        </form>
+    </div>
+</div>
+<div class="card" *ngSwitchCase="'cliente'">
+    <div class="card-header">
+        Nuevo cliente
+    </div>
+    <div class="card-body">
+        <form [formGroup]="formularioMultiuso" (ngSubmit)="enviarDatos()">
+            <div class="mb-3">
+                <label for="cliente" class="form-label">Nombre</label>
+                <br>
+                <input type="text"  formControlName="nombreCliente" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Telefono</label>
+                <br>
+                <input type="text"  formControlName="telefonoCliente" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="productos" class="form-label">Ciudad</label>
+                <select formControlName="IDCiudad" class="form-select">
+                    <option value="">...</option>
+                    <option *ngFor="let ciudad of ciudades" [value]="ciudad.IDCiudad">{{ciudad.NombreCiudad}}</option>
+                </select>
+                <br>
+                <a href="Añadir/ciudad" type="button" class="btn btn-primary">Nueva ciudad</a>
+              
+            </div>
+            <div class="mb-3">
+                <label for="imagen" class="form-label">Foto</label>
+                <br>
+                <img class="preview-image" [src]="selectedFile" alt="">
+                <input type="file" accept="image/*"   style="margin-top: 10px;" class="form-control" id="imagen" (change)="onFileChange($event)"/>
+            </div>
+            <div class="btn-group" role="group" aria-label="Button group name">
+                <button type="submit" class="btn btn-success">
+                    agregar
+                </button>
+                
+                <a href="Index" type="button" class="btn btn-primary">
+                    Cancelar
+                </a>
+                
+            </div>
+        </form>
+    </div>
+</div>
+<div class="card" *ngSwitchCase="'insumo'">
+    <div class="card-header">
+        Nuevo insumo
+    </div>
+    <div class="card-body">
+        <form [formGroup]="formularioMultiuso" (ngSubmit)="enviarDatos()" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="cliente" class="form-label">Nombre Insumo</label>
+                <br>
+                <input type="text"  formControlName="NombreInsumo">
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Precio</label>
+                <br>
+                <input type="number"  formControlName="precio" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Descuento pactado</label>
+                <br>
+                <input type="number"  formControlName="DescuentoPactadoCanje" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="imagen" class="form-label">Imagen</label>
+                <br>
+                <img class="preview-image" [src]="selectedFile" alt="">
+                <input type="file" accept="image/*"   style="margin-top: 10px;" class="form-control" id="imagen" (change)="onFileChange($event)"/>
+            </div>
+            <div class="btn-group" role="group" aria-label="Button group name">
+                <button type="submit" [disabled]="bloquearComponente" class="btn btn-success">
+                    agregar
+                </button>
+                
+                <a href="Index" type="button" class="btn btn-primary">
+                    Cancelar
+                </a>
+                
+            </div>
+        </form>
+    </div>
+</div>
+<div class="card" *ngSwitchCase="'proveedor'">
+    <div class="card-header">
+        Nuevo Proveedor
+    </div>
+    <div class="card-body">
+        <form [formGroup]="formularioMultiuso" (ngSubmit)="enviarDatos()" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="proveedor" class="form-label">Nombre Proveedor</label>
+                <br>
+                <input type="text"  formControlName="nombreProveedor">
+            </div>
+            <div class="mb-3">
+                <label for="telefono" class="form-label">telefono</label>
+                <br>
+                <input type="text"  formControlName="telefonoProveedor" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="ciudad" class="form-label">Ciudad</label>
+                <select formControlName="IDCiudad" class="form-select">
+                    <option *ngFor="let ciudad of ciudades" [value]="ciudad.IDCiudad">{{ciudad.NombreCiudad}}</option>
+                </select>
+                <br>
+                <a href="Añadir/ciudad" type="button" class="btn btn-primary">Nueva ciudad</a>
+
+            </div>
+            <div class="btn-group" role="group" aria-label="Button group name">
+                <button type="submit" [disabled]="bloquearComponente" class="btn btn-success">
+                    agregar
+                </button>
+                
+                <a href="Index" type="button" class="btn btn-primary">
+                    Cancelar
+                </a>
+                
+            </div>
+        </form>
+    </div>
+</div>
+<div class="card" *ngSwitchCase="'ciudad'">
+    <div class="card-header">
+        Nueva Ciudad
+    </div>
+    <div class="card-body">
+        <form [formGroup]="formularioMultiuso" (ngSubmit)="enviarDatos()" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="proveedor" class="form-label">Nombre Ciudad</label>
+                <br>
+                <input type="text"  formControlName="nombreCiudad">
+            </div>
+            <div class="mb-3">
+                <label for="ciudad" class="form-label">Provincias</label>
+                <select formControlName="IDProvincia" class="form-select">
+                    <option *ngFor="let provincia of provinciasArgentinas" [value]="provincia.id">{{provincia.nombre}}</option>
+                </select>
+            </div>
+            <div class="btn-group" role="group" aria-label="Button group name">
+                <button type="submit" [disabled]="bloquearComponente" class="btn btn-success">
+                    agregar
+                </button>
+                
+                <a href="Index" type="button" class="btn btn-primary">
+                    Cancelar
+                </a>
+                
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+

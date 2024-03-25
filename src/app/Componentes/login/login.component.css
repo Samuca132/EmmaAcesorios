@@ -1,0 +1,92 @@
+/* You can add global styles to this file, and also import other style files */
+.login-background{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color:rgb(215,163,67);
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    
+}
+p{
+   padding-left: 15%; 
+}
+.logoEmma{
+    margin-left: 25%;
+    height: 250px;
+    width: 250px;
+    margin-bottom: -50px;
+    background-size: cover; 
+    background-position: center;
+}
+
+.LoginBox{
+    background-color: white;
+    height: 317px;
+    width: 490px;
+    border-radius: 25px;
+    padding-top: 30px;
+    box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.5);
+}
+
+.LoginText{
+    font-size:32px;
+    margin-left: 27%;
+}
+.FormularioLogin p{
+    font-size: 20px;
+    font-family:'Franklin Gothic light', 'Arial Narrow', Arial, sans-serif;
+    margin-left: 15%;
+    margin-bottom: 3px;
+}
+.form-control{
+    width: 70%;
+    margin-left: 15%;
+    border-radius: 20px;
+    border-color: black;
+    background-color:#FBF0DB;
+    margin-bottom: 10px;
+}
+.botones{
+    margin-left: 15%;
+    margin-top: 20px;
+}
+.btn{
+    width: 163px;
+    height: 30px;
+    padding: 0px;
+    border-radius: 15px;
+}
+#BTNLogin{
+    color: black;
+    background-color: rgb(215,163,67);
+    border: 0ch;
+    margin-right: 10px;
+}
+#BTNPassword{
+    color: black;
+    background-color: #EA56A0;
+    border: 0ch;   
+}
+@media only screen and (max-width:700px) {
+    .LoginBox{
+        height: 400px;
+        width: 300px;
+        justify-content: center;
+        align-items: center;
+    }
+    .botones{
+        margin-left: 22%;
+        margin-top: 20px;
+    }
+    .LoginText{
+        font-size:32px;
+        margin-left: 15%;
+    }
+    .logoEmma{
+        margin-left: 18%;
+        height: 200px;
+        width: 200px;
+        margin-bottom: -10px;
+    }
+}
