@@ -19,7 +19,7 @@ import { Empleado } from './empleado';
 export class ServicesService {
 
 //  API: string='http://localhost/emmaaccesorios/'
-API: string='http://emmaaccesorios.great-site.net/Backend.php'
+API: string='http://emmaaccesorios.great-site.net/'
 
   constructor( private clienteHttp:HttpClient) { }
 
