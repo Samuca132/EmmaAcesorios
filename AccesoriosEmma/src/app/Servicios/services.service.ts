@@ -19,7 +19,6 @@ import { Empleado } from './empleado';
 export class ServicesService {
 
 API: string='http://localhost/BackendEmma/'
-//API: string='https://emma-distribuidora.great-site.net/Backend.php'
 
   constructor( private clienteHttp:HttpClient) { }
 
