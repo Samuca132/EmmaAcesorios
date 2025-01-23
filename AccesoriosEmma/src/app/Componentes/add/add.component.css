@@ -1,0 +1,46 @@
+img{
+    height: 200px;
+    width: 200px;
+    object-fit: cover;
+    border-radius: 15px;
+  }
+  section{
+    margin: 10%;
+    margin-top: 0px;
+}
+input{
+  border-radius: 30px;
+}
+.card{
+  margin-top: 10vh;
+  background-color: auto;
+  border: 0px;
+  border-radius: 15px;
+}
+.card-header{
+  background-color: #FBF0DB;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  border-bottom: 5px;
+  font-weight: bolder;
+}
+.btn{
+  border-radius: 30px;
+}
+.form-select{
+  border-radius: 30px;
+  background-color: #FBF0DB;
+}
+
+option{
+  background-color: white;
+}
+
+@media only screen and (max-width: 768px) {
+  .card{
+    margin-top: 30px;
+  }
+  .buttonsSections{
+      margin-bottom: 15px;
+  }
+}

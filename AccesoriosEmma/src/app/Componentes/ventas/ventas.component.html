@@ -1,0 +1,69 @@
+<app-navbar></app-navbar>
+<section >
+
+    <div class="firstRow">
+        <div class="buttonsSections">
+          <!--<a *ngIf="mostrarBotonNuevaVenta" type="button" class="btn btnStyle" href="Añadir/venta" id="btn1">Nueva venta</a>-->
+          <select class="btnStyle" id="btn2" name="pais" placeholder="hola" (change)="selectFilter($event)">
+            <option value="0">Filtrar</option>
+            <option value="1">Cliente</option>
+            <option value="2">Producto</option>
+            <option value="3">Ciudad</option>
+        </select>
+        <select *ngIf="filtrarPorCliente" class="btnStyle" id="btn3" name="pais" placeholder="hola" (change)="filtrarVentasPorCliente($event)">
+            <option value="0">...</option>
+            <option *ngFor="let cliente of clientes" [value]="cliente.IDCliente">{{cliente.nombreCliente}}</option>
+        </select>
+        <select *ngIf="filtrarPorProducto" class="btnStyle" id="btn4" name="pais" placeholder="hola" (change)="filtrarVentasPorProducto($event)">
+            <option value="0">...</option>
+            <option *ngFor="let producto of productos" [value]="producto.IDProducto">{{producto.NombreProducto}}</option>
+        </select>
+        <select *ngIf="filtrarPorCiudad" class="btnStyle" id="btn4" name="pais" placeholder="hola" (change)="filtrarVentasPorCiudad($event)">
+            <option value="0">...</option>
+            <option *ngFor="let ciudad of ciudades" [value]="ciudad.IDCiudad">{{ciudad.NombreCiudad}}</option>
+        </select>
+        
+        </div>
+        <div *ngIf="filtrarPorCliente" class="input-container">
+            <input type="search" class="input-with-image" name="busqueda" placeholder="Buscar" (keyup)="filtrarClientes($event)" autocomplete="off">
+        </div>
+    </div>
+    
+    <div *ngIf="!filtrarPorCliente" class="scrollbar-container" style="height: 82vh; overflow-y: auto;">
+        <table class="table table-primary">
+            <thead>
+                <tr class="custom-table">
+                    <th scope="col">Fecha</th>
+                    <th scope="col">clientes</th>
+                    <th scope="col">Productos</th>
+                    <th scope="col">Cantidad</th>
+                    <th scope="col">Ticket</th>
+                </tr>
+            </thead>
+            
+            <tbody>
+                <div class="separador"></div>
+                <tr *ngFor="let venta of Ventas; let iControl = index" class="{{ venta.nombreCliente}}">
+                    <td>{{ venta.Fecha }}</td>
+                    <td>{{ venta.nombreCliente}}</td>
+                    <td>{{ venta.CProductos}}</td>
+                    <td>${{ venta.Valor}}</td>
+                    
+                    <td><button type="" class="btn btn-primary mb-2" id="BTNLogin"  (click)="generarPDF()">Ticket</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <section *ngIf="filtrarPorCliente"  class="Container scrollbar-container">
+        <a href="Profile/{{cliente.IDCliente}}"  *ngFor="let cliente of clientes;let iControl = index"> <div class="ProductosCard">
+                <img [src]="cliente.Imagen.startsWith('data:image') ? cliente.Imagen : 'data:image/png;base64,'" class="imageProduct" alt=""> <div class="productDetails">
+                    <h6>{{ cliente.nombreCliente }}</h6>
+                    <p class="details">Ciudad:{{ cliente.nombreciudad}}</p>
+                    <p class="details">Compras: {{ cliente.cantidad_ventas}}</p>            </div>
+           </div>  </a>   
+    </section> 
+
+
+</section>

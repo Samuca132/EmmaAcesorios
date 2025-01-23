@@ -1,0 +1,24 @@
+<app-navbar></app-navbar>
+<section>
+  <div class="firstRow">
+      <div class="buttonsSections">
+          <a type="button" class="btn btnStyle" href="Añadir/insumo" id="btn1">Nuevo insumo</a>
+        </div>
+        <div class="input-container">
+          <input type="search" class="input-with-image" name="busqueda" placeholder="Buscar" (keyup)="filtrarInsumos($event)" autocomplete="off">
+      </div>
+    </div>
+    <section class="Container">
+    
+      <div class="ProductosCard"  *ngFor="let insumo of insumos;let iControl = index">
+          <img [src]="insumo.ImagenInsumo.startsWith('data:image') ? insumo.ImagenInsumo : 'data:image/png;base64,'" class="imageProduct" alt="">
+          <div class="productDetails">
+              <h6>{{ insumo.NombreInsumo }}</h6>
+              <p class="details">Precio:${{ insumo.precio}}</p>
+              <p class="details">Stock: {{ insumo.Stock}}</p>
+              <a  class="btn btn-danger btnStyle2" (click)="borrarRegistro(insumo.IDInsumo, iControl)" role="button">Borrar</a>
+              <a  class="btn btn-warning btnStyle2" href="Editar/insumo/{{insumo.IDInsumo}}" role="button">Editar</a>
+          </div>
+      </div>
+    </section>
+</section>

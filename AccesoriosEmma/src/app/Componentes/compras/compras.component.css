@@ -1,0 +1,100 @@
+.firstRow{
+    margin-top: 60px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+.buttonsSections{
+    display: flex;
+}
+
+.btnStyle{
+    border-radius: 30px;
+    height: 25px;
+    width: 163px;
+    padding-top: 0px;
+    font-weight: bold;
+    transition: 0.2s;
+    margin-right: 3%;
+}
+#btn1{
+    background-color: #D7A343;
+}
+
+#btn2{
+    background-color:#EA56A0;
+    padding-left: 10px;
+}
+#btn3{
+    background-color: rgb(60, 206, 60);
+    padding-left: 10px;
+}
+
+#btn4{
+    background-color:rgb(255, 225, 0);
+    padding-left: 10px;
+}
+option{
+    background-color: white;
+}
+
+.input-with-image{
+    border-radius: 30px;
+    width: 300px;
+    padding-left: 30px;
+}
+
+
+th{
+    background-color: white;  
+    text-align: center;
+    border-bottom: black 2px solid;
+}
+
+.separador{
+    height: 10px;
+}
+
+tr{
+    padding-top: 10px;
+}
+td{
+    background-color: #FBF0DB;
+    border-bottom: solid 4px white;
+    text-align: center;
+}
+td:first-child{
+    border-top-left-radius: 15px; 
+    border-bottom-left-radius: 18px;
+}
+td:last-child{
+    border-top-right-radius: 15px; 
+    border-bottom-right-radius: 18px;
+}
+
+.scrollbar-container {
+    height: 82vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #FBF0DB white;
+}
+
+/* Estilos para el scrollbar */
+.scrollbar-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scrollbar-container::-webkit-scrollbar-thumb {
+    background-color: #FBF0DB;    
+    border-radius: 10px;
+}
+
+.scrollbar-container::-webkit-scrollbar-track {
+    background-color: #f5f5f5;
+}
+
+section{
+    margin: 10%;
+    margin-top: 0px;
+}

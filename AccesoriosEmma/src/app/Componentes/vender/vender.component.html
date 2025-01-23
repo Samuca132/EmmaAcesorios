@@ -1,0 +1,40 @@
+<app-navbar></app-navbar>
+<section>
+    <div>
+        <div class="card">
+            <div class="card-header">
+                Nueva venta
+            </div> 
+            <div class="card-body">
+                <div *ngFor="let formulario of formularios; let i = index">
+                    <form [formGroup]="formulario">
+                        <div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Cantidad</label>
+                                <br>
+                                <input type="number" formControlName="CantidadProducto" min="0">
+                            </div>
+                            <div class="mb-3">
+                            <label for="productos" class="form-label">Producto</label>
+                            <br>
+                            <input formControlName="IDProducto" list="opciones" placeholder="Selecciona una opción">
+                            <datalist  id="opciones">
+                                <option  *ngFor="let producto of productos" [value]="producto.NombreProducto">
+                            </datalist>
+
+                            </div>
+                            <div class="btn-group" role="group" aria-label="Button group name">                                
+                                <button *ngIf="i !== formularios.length - 1" type="button" class="btn btn-danger" (click)="eliminarFormulario(i)">
+                                    Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <button class="btn btn-success" (click)="concretarVenta()">Concretar venta</button>
+                <a type="button" class="btn btnblu" (click)="agregarFormulario()">Sumar producto</a>
+                <a href="Index" type="button" class="btn btn-danger">Cancelar</a>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,112 @@
+.firstRow{
+    margin-top: 60px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+section{
+    margin: 10%;
+    margin-top: 0px;
+}
+@media only screen and (max-width: 768px) {
+    .firstRow{
+        display: block;
+        justify-content: center;
+    }
+    .buttonsSections{
+        margin-bottom: 15px;
+    }
+}
+
+.buttonsSections{
+    display: flex;
+}
+
+.btnStyle{
+    border-radius: 30px;
+    height: 25px;
+    width: 163px;
+    padding-top: 0px;
+    font-weight: bold;
+    transition: 0.2s;
+    margin-right: 3%;
+}
+#btn1{
+    background-color: #D7A343;
+}
+
+#btn2{
+    background-color:#EA56A0;
+    padding-left: 10px;
+}
+option{
+    background-color: white;
+}
+
+.input-with-image{
+    border-radius: 30px;
+    width: 300px;
+    padding-left: 30px;
+}
+.Container{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; /* Centrado horizontal */
+    align-items: center;
+    height: 80vh;
+    overflow: scroll;
+    margin: 0px;
+}
+.ProductosCard{
+    margin: 5px;
+    width: 350px;
+    height: 110px;
+    background-color: #FBF0DB;
+    border-radius: 15px;
+    display: flex;
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3);
+}
+.imageProduct{
+    height: 100px;
+    width: 100px;
+    border-radius: 15px;
+    margin-top: 5px;
+    margin-left: 5px;
+    object-fit: cover;
+
+
+}
+.productDetails{
+    width: 100%;
+}
+
+h6{
+    margin: 10px;
+    margin-bottom: 5px;
+    font-weight: bolder;
+}
+.details{
+    font-size: small;
+    margin-left: 10px;
+    margin-bottom: 2px;
+}
+.btnStyle2{
+    border-radius: 30px;
+    height: 20px;
+    width: 90px;
+    font-size: small;
+    padding-top: 0px;
+    padding-bottom: 20px;
+    transition: 0.2s;
+    margin-left: 10px;
+}
+/* Para WebKit (Chrome, Safari) */
+::-webkit-scrollbar {
+    width: 12px; /* Ancho de la barra de desplazamiento */
+}
+
+::-webkit-scrollbar-thumb {
+    background:#D7A343; /* Color del indicador de desplazamiento */
+    border-radius: 6px; /* Bordes redondeados del indicador */
+}
+

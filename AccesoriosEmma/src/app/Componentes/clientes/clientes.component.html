@@ -1,0 +1,26 @@
+<app-navbar></app-navbar>
+<section>
+<div class="firstRow">
+    <div class="buttonsSections">
+        <a type="button" class="btn btnStyle" href="Añadir/cliente" id="btn1">Nuevo Cliente</a>
+      </div>
+      <div class="input-container">
+          <input type="search" class="input-with-image" name="busqueda" placeholder="Buscar" (keyup)="filtrarClientes($event)" autocomplete="off">
+      </div>
+</div>
+  <section class="Container">
+  
+    <div class="ProductosCard"  *ngFor="let cliente of clientes;let iControl = index">
+        <img [src]="cliente.Imagen.startsWith('data:image') ? cliente.Imagen : 'data:image/png;base64,'" class="imageProduct" alt=""> <div class="productDetails">
+            <h6>{{ cliente.nombreCliente }}</h6>
+            <p class="details">Ciudad:{{ cliente.nombreciudad}}</p>
+            <p class="details">Compras: {{ cliente.cantidad_ventas}}</p>
+            <a  class="btn btn-warning btnStyle2" href="/Profile/{{cliente.IDCliente}}" role="button">Perfil</a>
+        </div>
+    </div>    
+</section>
+
+    
+
+
+ 

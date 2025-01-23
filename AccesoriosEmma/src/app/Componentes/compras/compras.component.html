@@ -1,0 +1,46 @@
+<app-navbar></app-navbar>
+<section>
+    <div class="firstRow">
+        <div class="buttonsSections">
+          <a *ngIf="mostrarBotonNuevaCompra" type="button" class="btn btnStyle" href="Añadir/compra" id="btn1">Nueva Compra</a>
+          <select class="btnStyle" id="btn2" name="pais" placeholder="hola" (change)="selectFilter($event)">
+            <option value="0">Filtrar</option>
+            <option value="1">Proveedor</option>
+            <option value="2">Insumo</option>
+        </select>
+        <select *ngIf="filtrarPorProveedor" class="btnStyle" id="btn3" name="pais" placeholder="hola" (change)="filtrarVentasPorProveedor($event)">
+            <option value="usa">...</option>
+            <option *ngFor="let proveedor of proveedores" [value]="proveedor.IDProveedor">{{proveedor.nombre}}</option>
+        </select>
+        <select *ngIf="filtrarPorInsumo" class="btnStyle" id="btn4" name="pais" placeholder="hola" (change)="filtrarVentasPorInsumo($event)">
+            <option value="usa">...</option>
+            <option *ngFor="let insumo of insumos" [value]="insumo.IDInsumo">{{insumo.NombreInsumo}}</option>
+        </select>
+        </div>
+    
+    </div>
+    
+    <table class="table table-primary ">
+        <thead >
+            <tr class="custom-table">
+                <th scope="col">Fecha</th>
+                <th scope="col">Proveedor</th>
+                <th scope="col">Producto</th>
+                <th scope="col">Cantidad</th>
+                <th scope="col">Costo</th>
+            </tr>
+        </thead>
+        
+        <tbody>
+            <div class="separador"></div>
+            <tr *ngFor="let compra of compras; let iControl = index">
+                <td>{{ compra.FechaCompra }}</td>
+                <td>{{ compra.nombreProveedor }}</td>
+                <td>{{ compra.nombreInsumo}}</td>
+                <td>{{ compra.cantidad }}</td>
+                <td>${{ compra.costo }}</td>
+            </tr>
+        
+        </tbody>
+    </table>
+</section>

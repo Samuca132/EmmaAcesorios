@@ -1,0 +1,62 @@
+<app-navbar></app-navbar>
+<section>
+    
+<div class="firstRow">
+    <div class="buttonsSections">
+      <a *ngIf="mostrarBotonNuevoCanje" type="button" class="btn btnStyle" href="Añadir/canje" id="btn1">Nuevo Canje</a>
+      <select class="btnStyle" id="btn2" name="pais" placeholder="hola" (change)="selectFilter($event)">
+        <option value="0">Filtrar</option>
+        <option value="1">Proveedor</option>
+        <option value="2">Producto</option>
+        <option value="4">Insumo</option>
+        <option value="3">Ciudad</option>
+    </select>
+    <select *ngIf="filtrarPorProveedor" class="btnStyle" id="btn3" name="pais" placeholder="hola" (change)="filtrarCanjesPorProveedor($event)">
+        <option value="0">...</option>
+        <option *ngFor="let proveedor of Proveedores" [value]="proveedor.IDProveedor">{{proveedor.nombre}}</option>
+    </select>
+    <select *ngIf="filtrarPorProducto" class="btnStyle" id="btn4" name="pais" placeholder="hola" (change)="filtrarCanjesPorProducto($event)">
+        <option value="0">...</option>
+        <option *ngFor="let producto of productos" [value]="producto.IDProducto">{{producto.NombreProducto}}</option>
+    </select>
+    <select *ngIf="filtrarPorInsumo" class="btnStyle" id="btn4" name="pais" placeholder="hola" (change)="filtrarCanjesPorCiudad($event)">
+        <option value="0">...</option>
+        <option *ngFor="let insumo of insumos" [value]="insumo.IDInsumo">{{insumo.NombreInsumo}}</option>
+    </select>
+    <select *ngIf="filtrarPorCiudad" class="btnStyle" id="btn4" name="pais" placeholder="hola" (change)="filtrarCanjesPorCiudad($event)">
+        <option value="0">...</option>
+        <option *ngFor="let ciudad of ciudades" [value]="ciudad.IDCiudad">{{ciudad.NombreCiudad}}</option>
+    </select>
+    </div>
+
+</div>
+
+<table class="table table-primary ">
+    <thead >
+        <tr class="custom-table">
+            <th scope="col">Fecha</th>
+            <th scope="col">Proveedor</th>
+            <th scope="col">Recibo</th>
+            <th scope="col">Cantidad</th>
+            <th scope="col">Entrego</th>
+            <th scope="col">Cantidad</th>
+            <th scope="col">Profit</th>
+        </tr>
+    </thead>
+    
+    <tbody>
+        <div class="separador"></div>
+        <tr  *ngFor="let canje of Canjes; let iControl = index" >
+            <td>{{canje.FechaCanje}}</td>
+            <td>{{canje.NombreProveedor}}</td>
+            <td>{{canje.NombreInsumo}}</td>
+            <td>{{canje.CantidadInsumo}}</td>
+            <td>{{canje.NombreProducto}}</td>
+            <td>{{canje.CantidadProducto}}</td>
+            <td>{{canje.Profit}}</td>
+        </tr>
+    
+    </tbody>
+</table>
+
+</section>

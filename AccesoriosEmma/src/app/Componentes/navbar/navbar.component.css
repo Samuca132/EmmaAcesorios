@@ -1,0 +1,52 @@
+.NavBar{
+    padding-left: 10%;
+    padding-right: 10%;
+    width: 100%;    
+    display: flex;
+    justify-content: space-between;
+
+}
+
+.NavContainer{
+    background-color: #D7A343;
+}
+.logoNav{
+    height: 60px;
+    margin: -15px;
+}
+.nav-item{
+    color: white;
+    font-weight: 500;
+}
+.nav-item:hover{
+    font-weight: 700;
+    text-decoration: underline;
+}
+.menuImg{
+    height: 50px;
+}
+
+#menuImg {
+    display: none;
+}
+  
+
+  
+  @media only screen and (max-width: 768px) {
+    #menuImg {
+      display: block;
+    }
+
+    #menu {
+    display: none;
+    }
+    
+    #menu.active {
+    display: flex;
+    }
+    
+    #menuImg {
+    cursor: pointer;
+    }
+
+  }

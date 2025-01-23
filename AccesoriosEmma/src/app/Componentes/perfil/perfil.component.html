@@ -1,0 +1,86 @@
+<app-navbar></app-navbar>
+<section class="container">
+    <section class="Profile">
+        
+        <div (click)="toggleClase()" *ngFor="let client of cliente;let iControl = index" class="sideProfile" [ngClass]="{'mobile-menu mobile-menu-container' : aplicarClase}">
+            
+            <img class="profile-picture" [ngClass]="{'mobile-menu-image': aplicarClase}" [src]="client.Imagen.startsWith('data:image') ? client.Imagen : 'data:image/png;base64,'" alt="">  
+            <div class="buttonsMenu">
+                <h6 class="ProfileName">{{ client.nombreCliente }}</h6>
+                <h6 class="ProfileInfo profileMenu"  [ngClass]="{'mobile-menu': aplicarClase}">Ciudad: {{ client.nombreciudad }}</h6>
+            </div>
+            <div class="buttonsMenu">
+                <h6 class="ProfileInfo profileMenu" [ngClass]="{'mobile-menu': aplicarClase}">Tel:  {{ client.telefonoCliente}}</h6>
+                <h6 class="ProfileInfo profileMenu" [ngClass]="{'mobile-menu': aplicarClase}">Compras:{{ client.cantidad_ventas }}</h6>
+            </div>
+        <div class="buttonsMenu">
+            <a *ngIf="mostrarBotonNuevaVenta"  type="button" class="btnProfile btn btnStyle profileMenu btnDesktop" href="Vender/{{client.IDCliente}}" id="btn1">Nueva venta</a>
+        
+            <select class="btnProfile btnStyle profileMenu btnDesktop" id="btn2" name="pais" placeholder="hola" (change)="selectFilter($event)">
+                <option value="0">Filtrar</option>
+                <option value="2">Producto</option>
+            </select>
+                
+            <select *ngIf="filtrarPorProducto"  class="btnProfile btnStyle  profileMenu" id="btn4" name="pais" placeholder="hola" (change)="filtrarVentasPorProducto($event)">
+                <option value="0">...</option>
+                <option *ngFor="let producto of productos"  [value]="producto.IDProducto">{{producto.NombreProducto}}</option>
+            </select>
+        </div>
+        <div class="buttonsMenu"> 
+            <a  class="btnProfile btn btn-warning btnStyle profileMenu"  [ngClass]="{'mobile-menu': aplicarClase}" href="Editar/cliente/{{client.IDCliente}}" role="button">Editar</a>
+            
+            <a  class="btnProfile btn btn-danger btnStyle profileMenu " [ngClass]="{'mobile-menu': aplicarClase}" (click)="borrarRegistro(client.IDCliente, 1)" role="button">Borrar</a>           
+        </div>
+
+        <!--sdafasfsf-->
+        <div class="buttonsMenu">
+            <a *ngIf="mostrarBotonNuevaVenta"  type="button" class="btnProfile btn btnStyle asd" href="Vender/{{client.IDCliente}}" id="btn1">Nueva venta</a>
+        
+            <select class="btnProfile btnStyle asd" id="btn2" name="pais" placeholder="hola" (change)="selectFilter($event)">
+                <option value="0">Filtrar</option>
+                <option value="2">Producto</option>
+            </select>
+                
+            <select *ngIf="filtrarPorProducto "  class="btnProfile btnStyle asd" id="btn4" name="pais" placeholder="hola" (change)="filtrarVentasPorProducto($event)">
+                <option value="0">...</option>
+                <option *ngFor="let producto of productos"  [value]="producto.IDProducto">{{producto.NombreProducto}}</option>
+            </select>
+    </div>
+ 
+
+    </div>
+        <div class="MainScreen">
+            <div class="listContainer scrollbar-container">
+                <table class="table table-primary">
+                    <thead>
+                        <tr class="custom-table">
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Productos</th>
+                            <th scope="col">Total</th>
+                            <th scope="col">Ticket</th>
+                        </tr>
+                    </thead>
+                    
+                    <tbody>
+                        <div class="separador"></div>
+                        <tr *ngFor="let venta of getVentasPaginadas(); let iControl = index" class="{{ venta.nombreCliente}}">
+                            <td>{{ venta.Fecha }}</td>
+                            <td>{{ venta.CProductos}}</td>
+                            <td>${{ venta.Valor}}</td>
+                            
+                            <td><button type="" class="btn btn-primary mb-2" id="BTNLogin"  (click)="generarPDF(venta.IDTicket,venta.Valor)">Ticket</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <a *ngIf="mostrarBotonNuevaVenta"  type="button" class="btnProfile btn btnStyle profileMenu btnDesktop" (click)="cambiarPaginacion('inicio')" id="btn1">inicio</a>
+                <a *ngIf="mostrarBotonNuevaVenta"  type="button" class="btnProfile btn btnStyle profileMenu btnDesktop" (click)="cambiarPaginacion('minus')" id="btn1"><<</a>
+                <a *ngIf="mostrarBotonNuevaVenta"  type="button" class="btnProfile btn btnStyle profileMenu btnDesktop" (click)="cambiarPaginacion('minus')" id="btn1">{{ this.counter }}</a>
+                <a *ngIf="mostrarBotonNuevaVenta"  type="button" class="btnProfile btn btnStyle profileMenu btnDesktop" (click)="cambiarPaginacion('plus')" id="btn1">>></a>
+                <a *ngIf="mostrarBotonNuevaVenta"  type="button" class="btnProfile btn btnStyle profileMenu btnDesktop" (click)="cambiarPaginacion('final')" id="btn1">final</a>
+                
+            </div>
+        </div>
+    </section>
+</section>

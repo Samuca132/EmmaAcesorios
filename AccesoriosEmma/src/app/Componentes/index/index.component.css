@@ -1,0 +1,15 @@
+section{
+    margin: 10%;
+    height: 70vh;
+    display: grid;
+    place-items: center;
+}
+.mainContainer{
+    display: flex;
+}
+.título{
+    font-size: 50px;
+}
+img{
+    width: 100%;
+}
