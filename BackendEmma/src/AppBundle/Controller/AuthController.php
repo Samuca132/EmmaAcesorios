@@ -76,12 +76,17 @@ class AuthController extends ApiController
             return $this->error('La cuenta está bloqueada temporalmente por demasiados intentos fallidos. Probá de nuevo más tarde.', 423);
         }
 
-        if (!$usuario->isEnabled() || !$this->encoder->isPasswordValid($usuario, $data['password'])) {
+        if (!$this->encoder->isPasswordValid($usuario, $data['password'])) {
             $usuario->registrarLoginFallido();
             $this->em->flush();
             $this->throttle->registrarFallo($ip);
 
             return $this->error(self::MENSAJE_ERROR, 401);
+        }
+
+        // Solo se avisa que está desactivado a quien ya demostró saber la contraseña
+        if (!$usuario->isEnabled()) {
+            return $this->error('Tu usuario está desactivado. Consultá con un administrador.', 403);
         }
 
         $usuario->registrarLoginExitoso();

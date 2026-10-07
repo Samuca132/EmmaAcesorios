@@ -276,6 +276,23 @@ temporalmente por intentos fallidos), último ingreso y fecha de alta.
 No se pueden repetir emails: si ya existe un usuario con ese email (aunque haya sido dado de baja), el
 sistema avisa en el campo.
 
+**Administrar un usuario existente:** en la pestaña **Usuarios**, tocá el botón **⋮** de su fila:
+
+![Acciones sobre un usuario](img/21-gestion-usuarios.png)
+
+| Acción | Qué hace |
+|---|---|
+| **Editar** | Cambia nombre, email o rol. |
+| **Restablecer contraseña** | Le pone una contraseña nueva (podés generarla). Si estaba bloqueado por intentos fallidos, lo desbloquea. Usalo cuando alguien se olvida la contraseña. |
+| **Desactivar** / **Activar** | Desactivado no puede ingresar y, si estaba usando el sistema, se le cierra la sesión. Se puede volver a activar en cualquier momento. Conviene para alguien que deja de trabajar por un tiempo. |
+| **Borrar** | Lo quita de la lista y no puede ingresar más. Las ventas, compras y canjes que registró se conservan con su nombre. |
+
+Para cuidar que el sistema no quede sin acceso:
+
+- Tu propio usuario aparece como **(vos)** y no podés desactivarlo, borrarlo ni quitarte el rol de
+  Administrador.
+- Siempre tiene que quedar al menos un administrador activo.
+
 ## 13. Tu cuenta: contraseña y cierre de sesión
 
 Tocá tu nombre arriba a la derecha:
@@ -315,6 +332,8 @@ Si una tabla tiene muchas columnas, deslizala hacia los costados.
 | *No se puede borrar: hay clientes o proveedores en esta ciudad.* | Primero cambiales la ciudad o borralos. |
 | Borré algo por error | No se perdió: pedile a quien administra el sistema que lo recupere. |
 | No veo **Configuración** en el menú | Solo la ven los usuarios con rol Administrador. |
+| *Tu usuario está desactivado. Consultá con un administrador.* | Un administrador desactivó tu usuario; pedile que lo vuelva a activar. |
+| Me olvidé la contraseña | Un administrador puede ponerte una nueva desde Configuración → Usuarios → **Restablecer contraseña**. |
 | *No tenés permisos para esta acción.* | Tu rol no puede hacer eso; pedíselo a un administrador. |
 | *No se pudo conectar con el servidor.* | Revisá tu conexión a internet; si sigue, avisá a quien administra el sistema. |
 | El reporte dice *No hay registros para los filtros elegidos* | Revisá las fechas (por defecto es el mes en curso) o tocá **Sin filtros**. |

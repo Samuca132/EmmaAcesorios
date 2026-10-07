@@ -15,6 +15,15 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 export type TipoColumna = 'texto' | 'numero' | 'moneda' | 'fecha' | 'fechaHora' | 'porcentaje';
 
+/** Acción adicional del menú ⋮ de cada fila (además de Editar y Borrar). */
+export interface AccionFila<T> {
+  id: string;
+  texto: string | ((fila: T) => string);
+  icono: string | ((fila: T) => string);
+  /** Si devuelve false, la acción no se muestra para esa fila. */
+  visible?: (fila: T) => boolean;
+}
+
 export interface Columna<T> {
   clave: keyof T & string;
   titulo: string;
@@ -84,7 +93,7 @@ export interface Columna<T> {
                   <mat-icon>{{ iconoVer() }}</mat-icon>
                 </button>
               }
-              @if (conEditar() || conBorrar()) {
+              @if (conEditar() || conBorrar() || accionesVisibles(fila).length) {
                 <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Acciones" (click)="$event.stopPropagation()">
                   <mat-icon>more_vert</mat-icon>
                 </button>
@@ -92,7 +101,12 @@ export interface Columna<T> {
                   @if (conEditar()) {
                     <button mat-menu-item (click)="editar.emit(fila)"><mat-icon>edit</mat-icon>Editar</button>
                   }
-                  @if (conBorrar()) {
+                  @for (a of accionesVisibles(fila); track a.id) {
+                    <button mat-menu-item (click)="accion.emit({ id: a.id, fila })">
+                      <mat-icon>{{ valor(a.icono, fila) }}</mat-icon>{{ valor(a.texto, fila) }}
+                    </button>
+                  }
+                  @if (conBorrar() && (!borrable() || borrable()!(fila))) {
                     <button mat-menu-item (click)="borrar.emit(fila)"><mat-icon>delete</mat-icon>Borrar</button>
                   }
                 </mat-menu>
@@ -147,8 +161,13 @@ export class DataTable<T> implements AfterViewInit {
   readonly textoVacio = input('Todavía no hay registros.');
 
   readonly editar = output<T>();
+  readonly acciones = input<AccionFila<T>[]>([]);
+  /** Si se indica, el Borrar solo aparece en las filas donde devuelve true. */
+  readonly borrable = input<((fila: T) => boolean) | null>(null);
+
   readonly borrar = output<T>();
   readonly ver = output<T>();
+  readonly accion = output<{ id: string; fila: T }>();
 
   private readonly sort = viewChild.required(MatSort);
   private readonly paginator = viewChild.required(MatPaginator);
@@ -156,7 +175,8 @@ export class DataTable<T> implements AfterViewInit {
   readonly dataSource = new MatTableDataSource<T>([]);
   readonly claves = computed(() => {
     const claves: string[] = this.columnas().map((c) => c.clave);
-    return this.conEditar() || this.conBorrar() || this.conVer() ? [...claves, '_acciones'] : claves;
+    const conMenu = this.conEditar() || this.conBorrar() || this.conVer() || this.acciones().length > 0;
+    return conMenu ? [...claves, '_acciones'] : claves;
   });
 
   constructor() {
@@ -176,6 +196,14 @@ export class DataTable<T> implements AfterViewInit {
   filtrar(valor: string): void {
     this.dataSource.filter = normalizar(valor.trim());
     this.dataSource.paginator?.firstPage();
+  }
+
+  accionesVisibles(fila: T): AccionFila<T>[] {
+    return this.acciones().filter((a) => !a.visible || a.visible(fila));
+  }
+
+  valor(v: string | ((fila: T) => string), fila: T): string {
+    return typeof v === 'function' ? v(fila) : v;
   }
 
   esNumerica(col: Columna<T>): boolean {

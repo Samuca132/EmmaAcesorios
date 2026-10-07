@@ -159,6 +159,9 @@ sean accesibles, y `SYMFONY_ENV=prod`.
 | GET | `/api/reportes/{tipo}/excel` | El mismo reporte como archivo `.xlsx` |
 | GET | `/api/usuarios` | Lista de usuarios (para filtrar reportes) |
 | GET/POST | `/api/admin/usuarios` | Solo administradores: listar / crear usuarios `{nombre, email, rol, password}` |
+| PUT/DELETE | `/api/admin/usuarios/{id}` | Solo administradores: editar `{nombre, email, rol}` / borrar (soft delete) |
+| PUT | `/api/admin/usuarios/{id}/estado` | Solo administradores: `{activo}` para activar o desactivar |
+| PUT | `/api/admin/usuarios/{id}/password` | Solo administradores: `{password}` restablece y desbloquea |
 | GET | `/api/admin/roles` | Solo administradores: roles disponibles |
 
 Ventas, compras y canjes aceptan varios renglones por operación y se guardan en una sola transacción

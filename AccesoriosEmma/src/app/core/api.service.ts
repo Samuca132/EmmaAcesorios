@@ -117,6 +117,22 @@ export class ApiService {
     return this.http.post<UsuarioAdmin>(`${this.url}/admin/usuarios`, datos);
   }
 
+  editarUsuario(id: number, datos: { nombre: string; email: string; rol: number }): Observable<UsuarioAdmin> {
+    return this.http.put<UsuarioAdmin>(`${this.url}/admin/usuarios/${id}`, datos);
+  }
+
+  cambiarEstadoUsuario(id: number, activo: boolean): Observable<UsuarioAdmin> {
+    return this.http.put<UsuarioAdmin>(`${this.url}/admin/usuarios/${id}/estado`, { activo });
+  }
+
+  restablecerPassword(id: number, password: string): Observable<UsuarioAdmin> {
+    return this.http.put<UsuarioAdmin>(`${this.url}/admin/usuarios/${id}/password`, { password });
+  }
+
+  borrarUsuario(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.url}/admin/usuarios/${id}`);
+  }
+
   // ---------- Reportes ----------
   usuarios(): Observable<UsuarioResumen[]> {
     return this.http.get<UsuarioResumen[]>(`${this.url}/usuarios`);

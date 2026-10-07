@@ -46,6 +46,15 @@ export class AuthService {
     );
   }
 
+  /** Actualiza nombre/email de la sesión cuando el usuario edita sus propios datos. */
+  actualizarDatos(datos: Partial<Pick<Usuario, 'nombre' | 'email'>>): void {
+    const s = this.sesion();
+    if (!s) return;
+    const sesion: Sesion = { ...s, usuario: { ...s.usuario, ...datos } };
+    sessionStorage.setItem(CLAVE_SESION, JSON.stringify(sesion));
+    this.sesion.set(sesion);
+  }
+
   cambiarPassword(actual: string, nueva: string): Observable<unknown> {
     return this.http.post(`${environment.apiUrl}/me/password`, { actual, nueva });
   }

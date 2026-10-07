@@ -1,8 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import {
-  AbstractControl, FormControl, FormGroup, FormGroupDirective, ReactiveFormsModule, ValidationErrors, Validators,
-} from '@angular/forms';
+import { FormControl, FormGroup, FormGroupDirective, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
+import { filter, switchMap } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,22 +15,17 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiService, sinError } from '../../core/api.service';
 import { Rol, UsuarioAdmin } from '../../core/models';
 import { NotificacionService, erroresDeCampos, mensajeDeError } from '../../core/notificacion.service';
-import { Columna, DataTable } from '../../shared/data-table';
+import { AuthService } from '../../core/auth.service';
+import { confirmar } from '../../shared/confirm-dialog';
+import { AccionFila, Columna, DataTable } from '../../shared/data-table';
+import { FormDialog, FormDialogData } from '../../shared/form-dialog';
+import { LARGO_MINIMO_PASSWORD, generarPassword, passwordsCoinciden } from './password';
+import { RestablecerPasswordDialog } from './restablecer-password-dialog';
 import { PageHeader } from '../../shared/page-header';
 
-const LARGO_MINIMO = 12;
+const LARGO_MINIMO = LARGO_MINIMO_PASSWORD;
 
-const coinciden = (g: AbstractControl): ValidationErrors | null =>
-  g.get('password')?.value === g.get('repetir')?.value ? null : { noCoinciden: true };
-
-/** Contraseña aleatoria con el generador criptográfico del navegador. */
-function generarPassword(largo = 20): string {
-  const caracteres = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*-_=+?';
-  const valores = crypto.getRandomValues(new Uint32Array(largo));
-  return Array.from(valores, (v) => caracteres[v % caracteres.length]).join('');
-}
-
-type FilaUsuario = UsuarioAdmin & { estado: string };
+type FilaUsuario = UsuarioAdmin & { nombreVisible: string; estado: string; esYo: boolean };
 
 /**
  * Configuración (solo administradores, rol 1). Pestañas: lista de usuarios y
@@ -51,7 +46,8 @@ type FilaUsuario = UsuarioAdmin & { estado: string };
           <ng-template mat-tab-label><mat-icon class="tab-icono">group</mat-icon>Usuarios</ng-template>
           <div class="contenido">
             <app-data-table [columnas]="columnas" [datos]="usuarios()" [cargando]="cargando()"
-                            [conEditar]="false" [conBorrar]="false" textoVacio="No hay usuarios.">
+                            [acciones]="acciones" [borrable]="noSoyYo" textoVacio="No hay usuarios."
+                            (editar)="editar($event)" (borrar)="borrar($event)" (accion)="ejecutar($event)">
               <button mat-stroked-button (click)="pestania = 1"><mat-icon>person_add</mat-icon>Agregar usuario</button>
             </app-data-table>
           </div>
@@ -154,6 +150,8 @@ type FilaUsuario = UsuarioAdmin & { estado: string };
 })
 export class ConfiguracionPage implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
+  private readonly dialog = inject(MatDialog);
   private readonly notificacion = inject(NotificacionService);
 
   readonly largoMinimo = LARGO_MINIMO;
@@ -168,13 +166,26 @@ export class ConfiguracionPage implements OnInit {
   readonly errorGeneral = signal('');
 
   readonly columnas: Columna<FilaUsuario>[] = [
-    { clave: 'nombre', titulo: 'Nombre' },
+    { clave: 'nombreVisible', titulo: 'Nombre' },
     { clave: 'email', titulo: 'Email' },
     { clave: 'rolNombre', titulo: 'Rol' },
     { clave: 'estado', titulo: 'Estado' },
     { clave: 'ultimoLogin', titulo: 'Último ingreso', tipo: 'fechaHora' },
     { clave: 'creado', titulo: 'Creado', tipo: 'fechaHora' },
   ];
+
+  /** Acciones extra del menú ⋮ (Editar y Borrar ya los da la tabla). */
+  readonly acciones: AccionFila<FilaUsuario>[] = [
+    { id: 'password', texto: 'Restablecer contraseña', icono: 'key' },
+    {
+      id: 'estado',
+      texto: (u) => (u.activo ? 'Desactivar' : 'Activar'),
+      icono: (u) => (u.activo ? 'block' : 'check_circle'),
+      visible: (u) => !u.esYo,
+    },
+  ];
+  /** Nadie puede borrarse a sí mismo (el backend también lo impide). */
+  readonly noSoyYo = (u: FilaUsuario) => !u.esYo;
 
   readonly form = new FormGroup(
     {
@@ -187,7 +198,7 @@ export class ConfiguracionPage implements OnInit {
       }),
       repetir: new FormControl('', { nonNullable: true, validators: Validators.required }),
     },
-    { validators: coinciden },
+    { validators: passwordsCoinciden },
   );
 
   ngOnInit(): void {
@@ -198,8 +209,11 @@ export class ConfiguracionPage implements OnInit {
     this.cargando.set(true);
     this.api.adminUsuarios().subscribe({
       next: (usuarios) => {
+        const miId = this.auth.usuario()?.id;
         this.usuarios.set(usuarios.map((u) => ({
           ...u,
+          esYo: u.id === miId,
+          nombreVisible: u.id === miId ? `${u.nombre} (vos)` : u.nombre,
           estado: !u.activo ? 'Inactivo' : u.bloqueado ? 'Bloqueado temporalmente' : 'Activo',
         })));
         this.cargando.set(false);
@@ -209,6 +223,87 @@ export class ConfiguracionPage implements OnInit {
         this.notificacion.error(err);
       },
     });
+  }
+
+  editar(u: FilaUsuario): void {
+    this.dialog
+      .open<FormDialog<UsuarioAdmin>, FormDialogData<UsuarioAdmin>, UsuarioAdmin>(FormDialog, {
+        data: {
+          titulo: `Editar usuario`,
+          campos: [
+            { clave: 'nombre', etiqueta: 'Nombre', tipo: 'texto', requerido: true, maxLength: 50, ancho: true },
+            { clave: 'email', etiqueta: 'Email', tipo: 'texto', requerido: true, maxLength: 100, ancho: true },
+            {
+              clave: 'rol', etiqueta: 'Rol', tipo: 'select', requerido: true, ancho: true,
+              opciones: this.roles().map((r) => ({ valor: r.id, texto: r.nombre })),
+              ayuda: u.esYo ? 'No podés quitarte el rol de administrador a vos mismo.' : '',
+            },
+          ],
+          valores: { nombre: u.nombre, email: u.email, rol: u.rol },
+          guardar: (v) => this.api.editarUsuario(u.id, v as { nombre: string; email: string; rol: number }),
+        },
+      })
+      .afterClosed()
+      .pipe(filter((r): r is UsuarioAdmin => !!r))
+      .subscribe((actualizado) => {
+        if (u.esYo) {
+          this.auth.actualizarDatos({ nombre: actualizado.nombre, email: actualizado.email });
+        }
+        this.notificacion.ok('Usuario actualizado.');
+        this.cargar();
+      });
+  }
+
+  ejecutar({ id, fila }: { id: string; fila: FilaUsuario }): void {
+    if (id === 'password') {
+      this.dialog
+        .open(RestablecerPasswordDialog, { data: fila, width: '480px' })
+        .afterClosed()
+        .pipe(filter(Boolean))
+        .subscribe(() => {
+          this.notificacion.ok(`Se cambió la contraseña de ${fila.nombre}.`);
+          this.cargar();
+        });
+    } else if (id === 'estado') {
+      const activar = !fila.activo;
+      confirmar(this.dialog, {
+        titulo: activar ? 'Activar usuario' : 'Desactivar usuario',
+        mensaje: activar
+          ? `${fila.nombre} va a poder volver a ingresar al sistema.`
+          : `${fila.nombre} no va a poder ingresar y, si tiene una sesión abierta, se le cierra. Podés volver a activarlo cuando quieras.`,
+        confirmar: activar ? 'Activar' : 'Desactivar',
+      })
+        .pipe(
+          filter(Boolean),
+          switchMap(() => this.api.cambiarEstadoUsuario(fila.id, activar)),
+        )
+        .subscribe({
+          next: () => {
+            this.notificacion.ok(activar ? `Se activó a ${fila.nombre}.` : `Se desactivó a ${fila.nombre}.`);
+            this.cargar();
+          },
+          error: (err) => this.notificacion.error(err),
+        });
+    }
+  }
+
+  borrar(u: FilaUsuario): void {
+    confirmar(this.dialog, {
+      titulo: 'Borrar usuario',
+      mensaje: `¿Seguro que querés borrar a ${u.nombre}? No va a poder ingresar más. Las ventas, compras y canjes que registró se conservan.`,
+      confirmar: 'Borrar',
+    })
+      .pipe(
+        filter(Boolean),
+        switchMap(() => this.api.borrarUsuario(u.id)),
+      )
+      .subscribe({
+        next: () => {
+          this.notificacion.ok(`Se borró a ${u.nombre}.`);
+          this.cargar();
+        },
+        error: (err) => this.notificacion.error(err),
+      });
   }
 
   error(campo: 'nombre' | 'email' | 'rol' | 'password'): string {

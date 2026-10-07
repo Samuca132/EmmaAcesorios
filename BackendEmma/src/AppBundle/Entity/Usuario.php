@@ -119,6 +119,34 @@ class Usuario implements AdvancedUserInterface
         return $this->rol === self::ROL_ADMIN;
     }
 
+    public function setNombre($nombre)
+    {
+        $this->nombre = $nombre;
+
+        return $this;
+    }
+
+    public function setEmail($email)
+    {
+        $this->email = mb_strtolower(trim($email));
+
+        return $this;
+    }
+
+    public function setRol($rol)
+    {
+        $this->rol = (int) $rol;
+
+        return $this;
+    }
+
+    public function setActivo($activo)
+    {
+        $this->activo = (bool) $activo;
+
+        return $this;
+    }
+
     public function setPassword($hash)
     {
         $this->password = $hash;
@@ -150,7 +178,7 @@ class Usuario implements AdvancedUserInterface
         }
     }
 
-    private function desbloquear()
+    public function desbloquear()
     {
         $this->intentosFallidos = 0;
         $this->bloqueadoHasta = null;

@@ -416,6 +416,10 @@ Cuerpos y respuestas en JSON.
 | GET | `/usuarios` | — | `[{id, nombre}]` (para el filtro "Registró") |
 | GET | `/admin/usuarios` | — (solo rol 1) | Usuarios con email, rol, estado, último ingreso y alta |
 | POST | `/admin/usuarios` | `{nombre, email, rol, password}` (solo rol 1, password ≥ 12) | Usuario creado. 422 si el email ya existe (aunque esté borrado) |
+| PUT | `/admin/usuarios/{id}` | `{nombre, email, rol}` | Usuario actualizado (422 si el email existe o si te quitás admin) |
+| PUT | `/admin/usuarios/{id}/estado` | `{activo: true\|false}` | Usuario (409 si es tu usuario o el último admin activo) |
+| PUT | `/admin/usuarios/{id}/password` | `{password}` (≥ 12) | Usuario; además lo desbloquea |
+| DELETE | `/admin/usuarios/{id}` | — | 204, soft delete (409 si es tu usuario o el último admin activo) |
 | GET | `/admin/roles` | — (solo rol 1) | `[{id, nombre}]` |
 
 Códigos de estado:
@@ -476,8 +480,16 @@ curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/api/productos
 
 ### Usuarios (Configuración)
 
-- Solo los administradores (rol 1) ven la sección **Configuración** y pueden crear usuarios de cualquier
-  rol (`AdminUsuarioController`).
+- Solo los administradores (rol 1) ven la sección **Configuración** (`AdminUsuarioController`) y
+  pueden **crear, editar** (nombre, email, rol), **restablecer la contraseña** (también desbloquea),
+  **desactivar/activar** y **borrar** (soft delete) usuarios.
+- Protecciones (en el backend; el frontend además oculta las acciones): nadie puede desactivarse,
+  borrarse ni quitarse el rol de administrador a sí mismo, y siempre debe quedar al menos un
+  administrador activo (`UsuarioRepository::contarAdminsActivos()`).
+- Desactivar o borrar corta el acceso al instante: `JwtAuthenticator` recarga el usuario en cada
+  petición, así que el token que ya tenía deja de valer (401).
+- Login de un usuario inactivo: si la contraseña es correcta responde **403** "Tu usuario está
+  desactivado"; si no, el 401 genérico (no revela nada a quien no conoce la contraseña).
 - La contraseña se valida (mínimo 12 caracteres) y se guarda con bcrypt; el formulario puede generarla
   con `crypto.getRandomValues` y la muestra una única vez.
 - El email se guarda en minúsculas y es único, incluso contra usuarios borrados.
@@ -550,7 +562,7 @@ AccesoriosEmma/
 
 | Componente | Qué hace |
 |---|---|
-| `DataTable` (`app-data-table`) | Tabla Material con búsqueda (sin acentos ni mayúsculas), orden por columna, paginado y menú Editar/Borrar o botón Ver. Las columnas se configuran con `Columna<T>` (`tipo`: texto, numero, moneda, fecha, fechaHora, porcentaje; `alertaSi` pinta en rojo valores bajos) |
+| `DataTable` (`app-data-table`) | Tabla Material con búsqueda (sin acentos ni mayúsculas), orden por columna, paginado y menú Editar/Borrar o botón Ver. Acepta acciones extra por fila (`acciones: AccionFila<T>[]`, evento `accion`) y `borrable` para ocultar Borrar en algunas filas. Las columnas se configuran con `Columna<T>` (`tipo`: texto, numero, moneda, fecha, fechaHora, porcentaje; `alertaSi` pinta en rojo valores bajos) |
 | `FormDialog` | Modal de alta/edición generado a partir de una lista de `CampoFormulario` (texto, número, entero, select, fecha, teléfono). Muestra en cada campo los errores 422 del backend |
 | `CrudPage<T>` | Clase base de las pantallas ABM: carga el listado y abre los modales de alta, edición y borrado. Una pantalla nueva solo define `recurso`, `columnas`, `campos()` y `valoresDe()` |
 | `ConfirmDialog` / `confirmar()` | Confirmación antes de borrar |
@@ -569,7 +581,7 @@ AccesoriosEmma/
 | `/productos`, `/insumos`, `/proveedores`, `/ciudades`, `/clientes` | `*Page extends CrudPage` | ABM con `FormDialog` |
 | `/clientes/:id` | `ClienteDetallePage` | Perfil + historial + nueva venta |
 | `/reportes` | `ReportesPage` | Pestañas ventas/compras/canjes, filtros, vista previa y descarga Excel |
-| `/configuracion` | `ConfiguracionPage` (`adminGuard`) | Pestañas *Usuarios* (lista) y *Agregar usuario* (alta con rol) |
+| `/configuracion` | `ConfiguracionPage` (`adminGuard`) + `RestablecerPasswordDialog` | Pestañas *Usuarios* (lista con editar, contraseña, activar/desactivar, borrar) y *Agregar usuario* |
 
 Todas las rutas (salvo login) están bajo el componente `Shell` (`layout/shell.ts`), que arma el
 *navigation drawer* lateral (fijo en escritorio, desplegable en celular) y el menú de usuario.
@@ -657,8 +669,6 @@ entidades, `flush`, `commit`; ante `DomainException` → `rollback` y 409. Regis
   una compra completa, agregar una entidad cabecera (como `Ticket` en ventas).
 - **Roles**: por ahora el rol solo restringe Configuración; falta definir qué puede hacer cada rol en el
   resto del sistema.
-- **Usuarios**: desde Configuración se pueden crear; editar, desactivar o borrar usuarios queda pendiente
-  (hoy se hace por consola o SQL).
 - **Papelera**: no hay pantalla para ver o restaurar registros borrados (se restauran por SQL).
 - **Anulación de ventas** (devolver stock): no implementada.
 - **Reportes muy grandes**: el Excel se arma en memoria; con decenas de miles de renglones conviene
