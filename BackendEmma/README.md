@@ -33,9 +33,14 @@ API REST en JSON que usa el frontend Angular. Reemplaza al antiguo `index.php`.
 ```bash
 cd BackendEmma
 composer install
-cp .env.dist .env          # y completar DATABASE_URL, JWT_SECRET, CORS_ALLOW_ORIGIN
+cp app/config/parameters.yml.dist app/config/parameters.yml
+cp .env.dist .env          # completar JWT_SECRET y CORS_ALLOW_ORIGIN
 php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"   # genera un JWT_SECRET
 ```
+
+La conexión a MySQL se configura en `app/config/parameters.yml` (copiado del archivo
+`parameters.yml.dist`, que no contiene credenciales reales). El archivo local se ignora en Git.
+`DATABASE_URL` ya no se usa; las variables JWT y CORS siguen configurándose en `.env`.
 
 ### Base de datos
 
