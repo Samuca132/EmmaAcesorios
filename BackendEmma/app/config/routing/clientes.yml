@@ -1,0 +1,23 @@
+clientes_listar:
+    path: /api/clientes
+    controller: AppBundle\Controller\ClienteController::listar
+    methods: [GET]
+clientes_crear:
+    path: /api/clientes
+    controller: AppBundle\Controller\ClienteController::crear
+    methods: [POST]
+clientes_ver:
+    path: /api/clientes/{id}
+    controller: AppBundle\Controller\ClienteController::ver
+    methods: [GET]
+    requirements: { id: '\d+' }
+clientes_editar:
+    path: /api/clientes/{id}
+    controller: AppBundle\Controller\ClienteController::editar
+    methods: [PUT]
+    requirements: { id: '\d+' }
+clientes_borrar:
+    path: /api/clientes/{id}
+    controller: AppBundle\Controller\ClienteController::borrar
+    methods: [DELETE]
+    requirements: { id: '\d+' }

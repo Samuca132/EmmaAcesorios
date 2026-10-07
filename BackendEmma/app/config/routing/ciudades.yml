@@ -1,0 +1,18 @@
+ciudades_listar:
+    path: /api/ciudades
+    controller: AppBundle\Controller\CiudadController::listar
+    methods: [GET]
+ciudades_crear:
+    path: /api/ciudades
+    controller: AppBundle\Controller\CiudadController::crear
+    methods: [POST]
+ciudades_editar:
+    path: /api/ciudades/{id}
+    controller: AppBundle\Controller\CiudadController::editar
+    methods: [PUT]
+    requirements: { id: '\d+' }
+ciudades_borrar:
+    path: /api/ciudades/{id}
+    controller: AppBundle\Controller\CiudadController::borrar
+    methods: [DELETE]
+    requirements: { id: '\d+' }

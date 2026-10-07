@@ -1,0 +1,7 @@
+<div class="page">
+  <app-page-header titulo="Clientes" subtitulo="Tocá un cliente para ver su historial y registrar ventas.">
+    <button mat-flat-button (click)="nuevo()"><mat-icon>add</mat-icon>Nuevo cliente</button>
+  </app-page-header>
+  <app-data-table [columnas]="columnas" [datos]="datos()" [cargando]="cargando()" [conVer]="true" textoVer="Ver perfil" iconoVer="person" (ver)="verPerfil($event)"
+                  (editar)="editar($event)" (borrar)="borrar($event)" />
+</div>

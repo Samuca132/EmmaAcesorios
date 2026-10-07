@@ -1,0 +1,32 @@
+security:
+    encoders:
+        AppBundle\Security\Usuario:
+            algorithm: bcrypt
+            cost: 12
+
+    providers:
+        usuarios:
+            id: AppBundle\Security\UsuarioProvider
+
+    firewalls:
+        login:
+            pattern: ^/api/login$
+            stateless: true
+            anonymous: true
+            security: false
+
+        api:
+            pattern: ^/api
+            stateless: true
+            anonymous: false
+            provider: usuarios
+            guard:
+                authenticators:
+                    - AppBundle\Security\JwtAuthenticator
+
+    access_control:
+        - { path: ^/api/login$, roles: IS_AUTHENTICATED_ANONYMOUSLY }
+        - { path: ^/api, roles: ROLE_USER }
+
+    role_hierarchy:
+        ROLE_ADMIN: ROLE_USER

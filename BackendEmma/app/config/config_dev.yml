@@ -1,0 +1,5 @@
+imports:
+    - { resource: config.yml }
+
+parameters:
+    log_level: debug

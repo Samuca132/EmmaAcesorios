@@ -1,0 +1,7 @@
+<div class="page">
+  <app-page-header titulo="Proveedores" subtitulo="Proveedores de insumos.">
+    <button mat-flat-button (click)="nuevo()"><mat-icon>add</mat-icon>Nuevo proveedor</button>
+  </app-page-header>
+  <app-data-table [columnas]="columnas" [datos]="datos()" [cargando]="cargando()"
+                  (editar)="editar($event)" (borrar)="borrar($event)" />
+</div>

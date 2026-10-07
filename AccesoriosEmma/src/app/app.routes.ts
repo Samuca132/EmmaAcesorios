@@ -1,32 +1,35 @@
 import { Routes } from '@angular/router';
-import { AuthGuard } from './auth.guard';
-
-import { IndexComponent } from './Componentes/index/index.component';
-import { VentasComponent } from './Componentes/ventas/ventas.component';
-import { CanjesComponent } from './Componentes/canjes/canjes.component';
-import { ComprasComponent } from './Componentes/compras/compras.component';
-import { ProductosComponent } from './Componentes/productos/productos.component';
-import { ClientesComponent } from './Componentes/clientes/clientes.component';
-import { InsumosComponent } from './Componentes/insumos/insumos.component';
-import { EditarComponent } from './Componentes/editar/editar.component';
-import { AddComponent } from './Componentes/add/add.component';
-import { LoginComponent } from './Componentes/login/login.component';
-import { PerfilComponent } from './Componentes/perfil/perfil.component';
-import { VenderComponent } from './Componentes/vender/vender.component';
-
+import { authGuard, invitadoGuard } from './core/auth.guard';
+import { Shell } from './layout/shell';
 
 export const routes: Routes = [
-    { path: '', pathMatch: 'full', redirectTo: 'login' },
-    { path: 'Index', component: IndexComponent,canActivate: [AuthGuard]  },
-    { path: 'Ventas', component: VentasComponent, canActivate: [AuthGuard] },
-    { path: 'Canjes', component: CanjesComponent, canActivate: [AuthGuard] },
-    { path: 'Compras', component: ComprasComponent, canActivate: [AuthGuard] },
-    { path: 'Productos', component: ProductosComponent, canActivate: [AuthGuard] },
-    { path: 'Clientes', component: ClientesComponent, canActivate: [AuthGuard] },
-    { path: 'Insumos', component: InsumosComponent, canActivate: [AuthGuard] },
-    { path: 'Editar/:tabla/:id', component: EditarComponent, canActivate: [AuthGuard] },
-    { path: 'Añadir/:tabla', component: AddComponent, canActivate: [AuthGuard] },
-    { path: 'Vender/:IDCliente', component: VenderComponent, canActivate: [AuthGuard] },   
-    { path: 'Profile/:id', component: PerfilComponent , canActivate: [AuthGuard] }, 
-    { path: 'login', component: LoginComponent },
+  {
+    path: 'login',
+    canActivate: [invitadoGuard],
+    title: 'Ingresar · Emma Accesorios',
+    loadComponent: () => import('./pages/login/login-page').then((m) => m.LoginPage),
+  },
+  {
+    path: '',
+    component: Shell,
+    canActivate: [authGuard],
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'inicio' },
+      { path: 'inicio', title: 'Inicio · Emma', loadComponent: () => import('./pages/inicio/inicio-page').then((m) => m.InicioPage) },
+      { path: 'ventas', title: 'Ventas · Emma', loadComponent: () => import('./pages/ventas/ventas-page').then((m) => m.VentasPage) },
+      { path: 'compras', title: 'Compras · Emma', loadComponent: () => import('./pages/compras/compras-page').then((m) => m.ComprasPage) },
+      { path: 'canjes', title: 'Canjes · Emma', loadComponent: () => import('./pages/canjes/canjes-page').then((m) => m.CanjesPage) },
+      { path: 'productos', title: 'Productos · Emma', loadComponent: () => import('./pages/productos/productos-page').then((m) => m.ProductosPage) },
+      { path: 'insumos', title: 'Insumos · Emma', loadComponent: () => import('./pages/insumos/insumos-page').then((m) => m.InsumosPage) },
+      { path: 'clientes', title: 'Clientes · Emma', loadComponent: () => import('./pages/clientes/clientes-page').then((m) => m.ClientesPage) },
+      {
+        path: 'clientes/:id',
+        title: 'Cliente · Emma',
+        loadComponent: () => import('./pages/cliente-detalle/cliente-detalle-page').then((m) => m.ClienteDetallePage),
+      },
+      { path: 'proveedores', title: 'Proveedores · Emma', loadComponent: () => import('./pages/proveedores/proveedores-page').then((m) => m.ProveedoresPage) },
+      { path: 'ciudades', title: 'Ciudades · Emma', loadComponent: () => import('./pages/ciudades/ciudades-page').then((m) => m.CiudadesPage) },
+    ],
+  },
+  { path: '**', redirectTo: '' },
 ];

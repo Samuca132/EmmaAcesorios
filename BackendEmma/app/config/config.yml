@@ -1,0 +1,38 @@
+imports:
+    - { resource: security.yml }
+    - { resource: services.yml }
+
+parameters:
+    # Valores por defecto: se sobreescriben con variables de entorno / archivo .env
+    env(DATABASE_URL): 'mysql://root:@127.0.0.1:3306/emmaaccesorios?charset=utf8mb4'
+    env(JWT_SECRET): ''
+    env(JWT_TTL): '28800'
+    env(CORS_ALLOW_ORIGIN): '^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$'
+    locale: es
+
+framework:
+    secret: '%env(JWT_SECRET)%'
+    router:
+        resource: '%kernel.project_dir%/app/config/routing.yml'
+        strict_requirements: ~
+    validation: { enable_annotations: false }
+    default_locale: '%locale%'
+    translator: { fallbacks: ['%locale%'] }
+    trusted_hosts: ~
+    session: false
+    php_errors:
+        log: true
+    cache:
+        app: cache.adapter.filesystem
+
+doctrine:
+    dbal:
+        url: '%env(DATABASE_URL)%'
+        charset: utf8mb4
+
+monolog:
+    handlers:
+        main:
+            type: stream
+            path: '%kernel.logs_dir%/%kernel.environment%.log'
+            level: '%log_level%'

@@ -1,0 +1,18 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+        bind:
+            $jwtSecret: '%env(JWT_SECRET)%'
+            $jwtTtl: '%env(int:JWT_TTL)%'
+            $corsAllowOrigin: '%env(CORS_ALLOW_ORIGIN)%'
+
+    AppBundle\:
+        resource: '../../src/AppBundle/*'
+        exclude: '../../src/AppBundle/{AppBundle.php,Security/Usuario.php,Command/Passwords.php}'
+
+    AppBundle\Controller\:
+        resource: '../../src/AppBundle/Controller'
+        public: true
+        tags: ['controller.service_arguments']

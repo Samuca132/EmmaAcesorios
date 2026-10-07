@@ -1,0 +1,23 @@
+insumos_listar:
+    path: /api/insumos
+    controller: AppBundle\Controller\InsumoController::listar
+    methods: [GET]
+insumos_crear:
+    path: /api/insumos
+    controller: AppBundle\Controller\InsumoController::crear
+    methods: [POST]
+insumos_ver:
+    path: /api/insumos/{id}
+    controller: AppBundle\Controller\InsumoController::ver
+    methods: [GET]
+    requirements: { id: '\d+' }
+insumos_editar:
+    path: /api/insumos/{id}
+    controller: AppBundle\Controller\InsumoController::editar
+    methods: [PUT]
+    requirements: { id: '\d+' }
+insumos_borrar:
+    path: /api/insumos/{id}
+    controller: AppBundle\Controller\InsumoController::borrar
+    methods: [DELETE]
+    requirements: { id: '\d+' }

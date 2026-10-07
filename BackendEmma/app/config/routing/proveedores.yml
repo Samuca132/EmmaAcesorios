@@ -1,0 +1,18 @@
+proveedores_listar:
+    path: /api/proveedores
+    controller: AppBundle\Controller\ProveedorController::listar
+    methods: [GET]
+proveedores_crear:
+    path: /api/proveedores
+    controller: AppBundle\Controller\ProveedorController::crear
+    methods: [POST]
+proveedores_editar:
+    path: /api/proveedores/{id}
+    controller: AppBundle\Controller\ProveedorController::editar
+    methods: [PUT]
+    requirements: { id: '\d+' }
+proveedores_borrar:
+    path: /api/proveedores/{id}
+    controller: AppBundle\Controller\ProveedorController::borrar
+    methods: [DELETE]
+    requirements: { id: '\d+' }

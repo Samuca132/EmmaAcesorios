@@ -1,0 +1,68 @@
+# ---------------- Autenticación ----------------
+login:
+    path: /api/login
+    controller: AppBundle\Controller\AuthController::login
+    methods: [POST]
+me:
+    path: /api/me
+    controller: AppBundle\Controller\AuthController::me
+    methods: [GET]
+me_password:
+    path: /api/me/password
+    controller: AppBundle\Controller\AuthController::cambiarPassword
+    methods: [POST]
+
+dashboard:
+    path: /api/dashboard
+    controller: AppBundle\Controller\DashboardController::resumen
+    methods: [GET]
+
+# ---------------- Catálogos (CRUD) ----------------
+productos:
+    resource: routing/productos.yml
+insumos:
+    resource: routing/insumos.yml
+clientes:
+    resource: routing/clientes.yml
+proveedores:
+    resource: routing/proveedores.yml
+ciudades:
+    resource: routing/ciudades.yml
+
+provincias:
+    path: /api/provincias
+    controller: AppBundle\Controller\CiudadController::provincias
+    methods: [GET]
+
+# ---------------- Operaciones ----------------
+compras_listar:
+    path: /api/compras
+    controller: AppBundle\Controller\CompraController::listar
+    methods: [GET]
+compras_crear:
+    path: /api/compras
+    controller: AppBundle\Controller\CompraController::crear
+    methods: [POST]
+
+canjes_listar:
+    path: /api/canjes
+    controller: AppBundle\Controller\CanjeController::listar
+    methods: [GET]
+canjes_crear:
+    path: /api/canjes
+    controller: AppBundle\Controller\CanjeController::crear
+    methods: [POST]
+
+ventas_listar:
+    path: /api/ventas
+    controller: AppBundle\Controller\VentaController::listar
+    methods: [GET]
+ventas_crear:
+    path: /api/ventas
+    controller: AppBundle\Controller\VentaController::crear
+    methods: [POST]
+ventas_ver:
+    path: /api/ventas/{id}
+    controller: AppBundle\Controller\VentaController::ver
+    methods: [GET]
+    requirements: { id: '\d+' }

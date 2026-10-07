@@ -1,0 +1,7 @@
+<div class="page">
+  <app-page-header titulo="Productos" subtitulo="Catálogo de productos terminados y su stock.">
+    <button mat-flat-button (click)="nuevo()"><mat-icon>add</mat-icon>Nuevo producto</button>
+  </app-page-header>
+  <app-data-table [columnas]="columnas" [datos]="datos()" [cargando]="cargando()"
+                  (editar)="editar($event)" (borrar)="borrar($event)" />
+</div>

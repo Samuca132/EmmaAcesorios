@@ -1,0 +1,23 @@
+productos_listar:
+    path: /api/productos
+    controller: AppBundle\Controller\ProductoController::listar
+    methods: [GET]
+productos_crear:
+    path: /api/productos
+    controller: AppBundle\Controller\ProductoController::crear
+    methods: [POST]
+productos_ver:
+    path: /api/productos/{id}
+    controller: AppBundle\Controller\ProductoController::ver
+    methods: [GET]
+    requirements: { id: '\d+' }
+productos_editar:
+    path: /api/productos/{id}
+    controller: AppBundle\Controller\ProductoController::editar
+    methods: [PUT]
+    requirements: { id: '\d+' }
+productos_borrar:
+    path: /api/productos/{id}
+    controller: AppBundle\Controller\ProductoController::borrar
+    methods: [DELETE]
+    requirements: { id: '\d+' }
