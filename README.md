@@ -7,6 +7,11 @@ Sistema de gestión (ventas, compras, canjes, stock y clientes) para Emma Acceso
 | [`BackendEmma/`](BackendEmma/README.md) | API REST en Symfony 3.4 + Doctrine ORM + MariaDB/MySQL |
 | [`AccesoriosEmma/`](AccesoriosEmma/README.md) | Frontend Angular 20 con Angular Material (Material Design 3) |
 
+## Documentación
+
+- [Documentación técnica](docs/DESARROLLO.md): arquitectura, entidades, API, seguridad, procesos y despliegue.
+- [Manual de usuario](docs/MANUAL_USUARIO.md): cómo usar el sistema día a día.
+
 ## Puesta en marcha rápida
 
 ```bash
