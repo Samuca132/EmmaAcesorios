@@ -8,7 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { debounceTime } from 'rxjs';
-import { ApiService } from '../../core/api.service';
+import { ApiService, sinError } from '../../core/api.service';
 import { Ciudad, Cliente, Producto, Ticket } from '../../core/models';
 import { NotificacionService } from '../../core/notificacion.service';
 import { Columna, DataTable } from '../../shared/data-table';
@@ -75,9 +75,9 @@ export class VentasPage implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly notificacion = inject(NotificacionService);
 
-  readonly clientes = toSignal(this.api.clientes(), { initialValue: [] as Cliente[] });
-  readonly productos = toSignal(this.api.productos(), { initialValue: [] as Producto[] });
-  readonly ciudades = toSignal(this.api.ciudades(), { initialValue: [] as Ciudad[] });
+  readonly clientes = toSignal(sinError(this.api.clientes()), { initialValue: [] as Cliente[] });
+  readonly productos = toSignal(sinError(this.api.productos()), { initialValue: [] as Producto[] });
+  readonly ciudades = toSignal(sinError(this.api.ciudades()), { initialValue: [] as Ciudad[] });
   readonly tickets = signal<Ticket[]>([]);
   readonly cargando = signal(true);
 

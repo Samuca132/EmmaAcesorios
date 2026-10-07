@@ -10,7 +10,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ApiService } from '../../core/api.service';
+import { ApiService, sinError } from '../../core/api.service';
 import { Cliente, Producto, Ticket } from '../../core/models';
 import { mensajeDeError } from '../../core/notificacion.service';
 
@@ -105,8 +105,8 @@ export class VentaDialog {
   private readonly ref = inject(MatDialogRef<VentaDialog, Ticket>);
   readonly data = inject<VentaDialogData>(MAT_DIALOG_DATA);
 
-  readonly clientes = toSignal(this.api.clientes(), { initialValue: [] as Cliente[] });
-  readonly productos = toSignal(this.api.productos(), { initialValue: [] as Producto[] });
+  readonly clientes = toSignal(sinError(this.api.clientes()), { initialValue: [] as Cliente[] });
+  readonly productos = toSignal(sinError(this.api.productos()), { initialValue: [] as Producto[] });
   readonly guardando = signal(false);
   readonly error = signal('');
 

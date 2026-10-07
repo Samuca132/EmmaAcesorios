@@ -10,7 +10,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ApiService } from '../../core/api.service';
+import { ApiService, sinError } from '../../core/api.service';
 import { Canje, Insumo, Producto, Proveedor } from '../../core/models';
 import { mensajeDeError } from '../../core/notificacion.service';
 
@@ -131,9 +131,9 @@ export class CanjeDialog {
   private readonly api = inject(ApiService);
   private readonly ref = inject(MatDialogRef<CanjeDialog, Canje[]>);
 
-  readonly proveedores = toSignal(this.api.proveedores(), { initialValue: [] as Proveedor[] });
-  readonly productos = toSignal(this.api.productos(), { initialValue: [] as Producto[] });
-  readonly insumos = toSignal(this.api.insumos(), { initialValue: [] as Insumo[] });
+  readonly proveedores = toSignal(sinError(this.api.proveedores()), { initialValue: [] as Proveedor[] });
+  readonly productos = toSignal(sinError(this.api.productos()), { initialValue: [] as Producto[] });
+  readonly insumos = toSignal(sinError(this.api.insumos()), { initialValue: [] as Insumo[] });
   readonly guardando = signal(false);
   readonly error = signal('');
 

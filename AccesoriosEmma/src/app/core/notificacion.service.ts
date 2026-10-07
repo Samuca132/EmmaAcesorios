@@ -18,12 +18,21 @@ export class NotificacionService {
 /** Extrae un mensaje legible de una respuesta de error del backend. */
 export function mensajeDeError(err: unknown, porDefecto = 'Ocurrió un error. Intentá de nuevo.'): string {
   if (err instanceof HttpErrorResponse) {
-    if (err.status === 0) {
-      return 'No se pudo conectar con el servidor.';
+    if (err.status === 0 || err.status === 502 || err.status === 503 || err.status === 504) {
+      return 'No se pudo conectar con el servidor. Verificá que el backend esté funcionando.';
+    }
+    if (err.status >= 200 && err.status < 300) {
+      // Llegó una respuesta "OK" que no es JSON: casi siempre es una página HTML
+      // porque apiUrl no apunta al backend (o el proxy de desarrollo no está activo).
+      return 'El servidor respondió algo que no es la API. Revisá que el backend esté levantado y la configuración de apiUrl.';
     }
     const cuerpo = err.error as { message?: string } | null;
     if (cuerpo?.message) {
       return cuerpo.message;
+    }
+    if (err.status >= 500) {
+      // Error sin respuesta de la API (p. ej. el proxy de desarrollo no llega al backend)
+      return 'No se pudo conectar con el servidor. Verificá que el backend esté funcionando.';
     }
   }
   return porDefecto;
