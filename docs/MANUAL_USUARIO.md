@@ -14,10 +14,11 @@ canjes, y mantener al día productos, insumos, clientes y proveedores.
 7. [Insumos](#7-insumos)
 8. [Compras](#8-compras)
 9. [Canjes](#9-canjes)
-10. [Proveedores y ciudades](#10-proveedores-y-ciudades)
-11. [Tu cuenta: contraseña y cierre de sesión](#11-tu-cuenta-contraseña-y-cierre-de-sesión)
-12. [Usar el sistema desde el celular](#12-usar-el-sistema-desde-el-celular)
-13. [Preguntas frecuentes y mensajes](#13-preguntas-frecuentes-y-mensajes)
+10. [Reportes y Excel](#10-reportes-y-excel)
+11. [Proveedores y ciudades](#11-proveedores-y-ciudades)
+12. [Tu cuenta: contraseña y cierre de sesión](#12-tu-cuenta-contraseña-y-cierre-de-sesión)
+13. [Usar el sistema desde el celular](#13-usar-el-sistema-desde-el-celular)
+14. [Preguntas frecuentes y mensajes](#14-preguntas-frecuentes-y-mensajes)
 
 ---
 
@@ -54,6 +55,7 @@ A la izquierda está el **menú** con todas las secciones:
 | Operaciones | Ventas | Registrar ventas y ver tickets |
 | | Compras | Registrar compras de insumos a proveedores |
 | | Canjes | Intercambiar productos por insumos con un proveedor |
+| Análisis | Reportes | Reportes de ventas, compras y canjes con descarga en Excel |
 | Catálogos | Productos | Lo que vendés |
 | | Insumos | Los materiales con los que fabricás |
 | | Clientes | A quién le vendés |
@@ -93,7 +95,7 @@ teléfono, y tocá **Crear**.
 
 ![Nuevo cliente](img/04-cliente-nuevo.png)
 
-> Si la ciudad no aparece en la lista, primero cargala en **Ciudades** (sección 10).
+> Si la ciudad no aparece en la lista, primero cargala en **Ciudades** (sección 11).
 
 **Ver el perfil:** tocá cualquier fila (o el ícono de persona). En el perfil ves sus datos, cuánto
 compró y el **historial de compras** con cada ticket. Desde ahí también podés **Editar**, **Borrar**
@@ -205,7 +207,32 @@ En el listado, la columna **Ganancia** compara lo que recibiste con lo que entre
 lista y con los descuentos): si es **positiva**, recibiste más valor del que diste; si es **negativa**
 (con signo −), entregaste más valor.
 
-## 10. Proveedores y ciudades
+## 10. Reportes y Excel
+
+En **Reportes** (menú *Análisis*) podés ver y descargar en Excel el detalle de tus ventas, compras y
+canjes.
+
+![Reportes](img/18-reportes.png)
+
+1. Elegí la pestaña: **Ventas**, **Compras** o **Canjes**.
+2. Ajustá los filtros. Por defecto se muestra el mes en curso. Los botones **Este mes**, **Mes
+   anterior**, **Este año** y **Sin filtros** cambian el período de un toque. Según el reporte podés
+   filtrar además por cliente, producto, ciudad, proveedor, insumo y por quién **registró** la
+   operación.
+3. La pantalla se actualiza sola y muestra:
+   - **Indicadores**: por ejemplo cantidad de tickets, unidades, total vendido, ganancia y ticket
+     promedio.
+   - **Resúmenes** desplegables: por producto, por cliente, por ciudad, por proveedor, etc. Tocá cada
+     uno para abrirlo.
+   - **Detalle**: todas las operaciones, con buscador y orden por columna.
+4. Tocá **Descargar Excel**. El archivo trae exactamente lo que estás viendo:
+   - Hoja **Detalle**: una fila por operación, con filtros de Excel en los títulos y una fila de
+     **TOTAL** que se recalcula sola si filtrás dentro de Excel.
+   - Hoja **Resumen**: los indicadores y las tablas agrupadas.
+   - Arriba de cada hoja figuran los filtros usados, la fecha y quién lo generó. Está listo para
+     imprimir en hoja A4 apaisada.
+
+## 11. Proveedores y ciudades
 
 - **Proveedores**: nombre, ciudad y teléfono. Un proveedor que ya tiene compras o canjes no se puede
   borrar (para no perder el historial).
@@ -214,7 +241,7 @@ lista y con los descuentos): si es **positiva**, recibiste más valor del que di
 
 Conviene cargar las ciudades **antes** que los clientes y proveedores, para poder elegirlas.
 
-## 11. Tu cuenta: contraseña y cierre de sesión
+## 12. Tu cuenta: contraseña y cierre de sesión
 
 Tocá tu nombre arriba a la derecha:
 
@@ -231,7 +258,7 @@ para el verano"*).
 Todo lo que registres (ventas, compras y canjes) queda asociado a tu usuario y se ve en la columna
 **Registró**. Por eso cada persona debería tener su propio usuario y no compartir contraseñas.
 
-## 12. Usar el sistema desde el celular
+## 13. Usar el sistema desde el celular
 
 El sistema se adapta a pantallas chicas. El menú se abre con el botón **☰** de arriba a la izquierda.
 Si una tabla tiene muchas columnas, deslizala hacia los costados.
@@ -241,7 +268,7 @@ Si una tabla tiene muchas columnas, deslizala hacia los costados.
   <img src="img/17-movil-menu.png" alt="Menú en el celular" width="260">
 </p>
 
-## 13. Preguntas frecuentes y mensajes
+## 14. Preguntas frecuentes y mensajes
 
 | Mensaje o situación | Qué significa / qué hacer |
 |---|---|
@@ -252,6 +279,7 @@ Si una tabla tiene muchas columnas, deslizala hacia los costados.
 | *No hay stock suficiente de "…" (disponible: N)* | Bajá la cantidad o cargá más stock en Productos. No se guardó nada de esa operación. |
 | *No se puede borrar: …* | La ciudad o el proveedor tiene registros asociados. |
 | *No se pudo conectar con el servidor.* | Revisá tu conexión a internet; si sigue, avisá a quien administra el sistema. |
+| El reporte dice *No hay registros para los filtros elegidos* | Revisá las fechas (por defecto es el mes en curso) o tocá **Sin filtros**. |
 | Un campo aparece en rojo | Leé el mensaje debajo del campo (obligatorio, número negativo, etc.). |
 | No encuentro una ciudad al cargar un cliente | Cargala primero en **Ciudades**. |
 | Me equivoqué en una venta | Hoy no hay anulación de ventas desde el sistema: anotá el número de ticket y consultá con quien administra el sistema. |

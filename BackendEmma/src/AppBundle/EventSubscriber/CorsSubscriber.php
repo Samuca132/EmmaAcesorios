@@ -56,5 +56,7 @@ class CorsSubscriber implements EventSubscriberInterface
         $headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
         $headers->set('Access-Control-Allow-Headers', 'Authorization, Content-Type');
         $headers->set('Access-Control-Max-Age', '3600');
+        // Para que el navegador pueda leer el nombre del archivo de los reportes
+        $headers->set('Access-Control-Expose-Headers', 'Content-Disposition');
     }
 }

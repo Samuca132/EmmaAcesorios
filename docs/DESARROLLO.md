@@ -51,7 +51,7 @@ EmmaAcesorios/
 
 | Capa | Tecnología | Versión |
 |---|---|---|
-| Backend | PHP | 7.1 – 7.4 oficial (probado también en 8.3) |
+| Backend | PHP | 7.4 oficial (probado también en 8.3); extensiones `pdo_mysql`, `zip`, `gd`, `xml`, `mbstring` |
 | | Symfony (monolito `symfony/symfony`) | 3.4 LTS |
 | | Doctrine ORM / DBAL | 2.7 / 2.13 |
 | | DoctrineBundle | 1.12 |
@@ -60,6 +60,7 @@ EmmaAcesorios/
 | Frontend | Angular (standalone components, signals) | 20 |
 | | Angular Material / CDK (Material Design 3) | 20 |
 | | jsPDF (tickets en PDF) | 4 |
+| Reportes | phpoffice/phpspreadsheet (archivos .xlsx) | 1.30 |
 | | TypeScript | 5.9 |
 
 `composer.json` fija la plataforma en PHP 7.4.33 (`config.platform.php`) para que Composer resuelva
@@ -137,6 +138,7 @@ BackendEmma/
 │   ├── Repository/            Consultas (QueryBuilder / DQL)
 │   ├── Controller/            Un controlador por recurso
 │   ├── Security/              JWT, autenticador Guard, límite de intentos por IP
+│   ├── Service/               Reportes (datos) y ExcelReporte (archivo .xlsx)
 │   ├── EventSubscriber/       CORS, errores en JSON, mitigación PATH_INFO
 │   └── Command/               Comandos de consola para usuarios
 ├── sql/                       Esquema exportado, migración desde v1, alta de usuario por SQL
@@ -340,6 +342,9 @@ Cuerpos y respuestas en JSON.
 | POST | `/compras` | `{proveedorId, fecha?, items: [{insumoId, cantidad, costo}]}` | Lista de compras creadas |
 | GET | `/canjes` | — | Canjes |
 | POST | `/canjes` | `{proveedorId, descuentoProducto?, descuentoInsumo?, items: [{productoId, cantidadProducto, insumoId, cantidadInsumo}]}` | Lista de canjes creados |
+| GET | `/reportes/{ventas\|compras\|canjes}` | Filtros (ver sección 9) | `{titulo, filtros, columnas, filas, totales, resumen}` |
+| GET | `/reportes/{tipo}/excel` | Mismos filtros | Archivo `.xlsx` (`Content-Disposition: attachment`) |
+| GET | `/usuarios` | — | `[{id, nombre}]` (para el filtro "Registró") |
 
 Códigos de estado:
 
@@ -393,6 +398,34 @@ curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/api/productos
 - Productos, insumos y clientes: **baja lógica** (`visibility = 0`); desaparecen de los listados pero se
   conservan para el historial.
 - Proveedores y ciudades: borrado real, solo si no están referenciados (si no → 409).
+
+### Reportes
+
+Servicio `Service/Reportes.php` + `Controller/ReporteController.php` + pantalla `pages/reportes`.
+
+| Reporte | Un renglón por | Filtros | Resumen (hoja 2 / paneles) |
+|---|---|---|---|
+| Ventas | producto vendido (renglón de ticket) | desde, hasta, cliente, producto, ciudad, usuario | por producto, cliente, ciudad y usuario (cuenta tickets distintos) |
+| Compras | insumo comprado | desde, hasta, proveedor, insumo, usuario | por proveedor e insumo |
+| Canjes | intercambio | desde, hasta, proveedor, producto, insumo, usuario | por proveedor, producto e insumo |
+
+- Fechas en formato `YYYY-MM-DD`; los ids deben ser enteros positivos (si no → 422).
+- `Reportes::generar()` arma los datos con QueryBuilder (consultas escalares, sin hidratar entidades)
+  y describe los filtros en texto ("Desde 01/10/2026 · Cliente: …").
+- `ExcelReporte::generar()` crea el `.xlsx` con PhpSpreadsheet:
+  - Hoja **Detalle**: título, filtros, fecha y usuario que lo generó; encabezado con color de marca,
+    fijo al hacer scroll y con **autofiltro**; fechas como fechas reales de Excel; formatos de moneda y
+    números; fila **TOTAL** con `SUBTOTAL(109, …)`, que se recalcula al filtrar en Excel.
+  - Hoja **Resumen**: indicadores y tablas agrupadas.
+  - Impresión: A4 apaisado, ajustado al ancho, encabezado repetido y número de página.
+  - Los textos que empiezan con `=`, `+`, `-` o `@` se guardan como texto (evita inyección de fórmulas).
+- La vista previa del frontend usa el mismo JSON, así que lo que se ve es lo que se descarga.
+- La descarga se hace con `HttpClient` (`responseType: 'blob'`) para enviar el token; el nombre del
+  archivo sale del header `Content-Disposition`, expuesto por CORS (`Access-Control-Expose-Headers`).
+
+Para agregar un reporte nuevo: un método más en `Reportes` (columnas, filas, totales, resumen), sumar
+el tipo a `TIPOS`/`FILTROS` y a la ruta (`requirements`), y en el frontend agregar la pestaña y sus
+filtros en `reportes-page.ts`. `ExcelReporte` no necesita cambios.
 
 ### Panel de inicio
 
@@ -451,6 +484,7 @@ AccesoriosEmma/
 | `/canjes` | `CanjesPage` + `CanjeDialog` | Operación múltiple |
 | `/productos`, `/insumos`, `/proveedores`, `/ciudades`, `/clientes` | `*Page extends CrudPage` | ABM con `FormDialog` |
 | `/clientes/:id` | `ClienteDetallePage` | Perfil + historial + nueva venta |
+| `/reportes` | `ReportesPage` | Pestañas ventas/compras/canjes, filtros, vista previa y descarga Excel |
 
 Todas las rutas (salvo login) están bajo el componente `Shell` (`layout/shell.ts`), que arma el
 *navigation drawer* lateral (fijo en escritorio, desplegable en celular) y el menú de usuario.
@@ -536,4 +570,6 @@ entidades, `flush`, `commit`; ante `DomainException` → `rollback` y 409. Regis
 - **Compras y canjes agrupados**: cada renglón es una fila independiente. Si se necesita ver/anular
   una compra completa, agregar una entidad cabecera (como `Ticket` en ventas).
 - **Roles**: los dos roles ven todo; definir qué puede hacer cada uno si se suman empleados.
-- **Anulación de ventas** (devolver stock) y reportes por período: no implementados.
+- **Anulación de ventas** (devolver stock): no implementada.
+- **Reportes muy grandes**: el Excel se arma en memoria; con decenas de miles de renglones conviene
+  paginar la vista previa y generar el archivo en segundo plano.
