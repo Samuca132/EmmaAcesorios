@@ -9,7 +9,15 @@ npm install
 npm start            # http://localhost:4200
 ```
 
-Espera el backend en `http://127.0.0.1:8000/api` (`php bin/console server:run`) (ver `src/environments/environment.development.ts`).
+En desarrollo el frontend llama a `/api` y el proxy de Angular (`proxy.conf.json`) reenvía esas
+peticiones al backend en `http://127.0.0.1:8000`, que se levanta con:
+
+```bash
+cd BackendEmma && php bin/console server:run
+```
+
+Si cambiás `proxy.conf.json` hay que reiniciar `npm start`. Si la aplicación muestra *"No se pudo
+conectar con el servidor"*, el backend no está corriendo en ese puerto.
 
 ## Producción
 

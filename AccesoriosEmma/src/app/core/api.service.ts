@@ -1,11 +1,19 @@
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   Canje, Ciudad, Cliente, Compra, Dashboard, Insumo, Producto, Proveedor, Provincia, Reporte, Ticket,
   TipoReporte, UsuarioResumen,
 } from './models';
+
+/**
+ * Para listas de opciones (selects): si la API falla devuelve una lista vacía
+ * en lugar de propagar el error, que con toSignal() rompería el renderizado.
+ */
+export function sinError<T>(fuente: Observable<T[]>): Observable<T[]> {
+  return fuente.pipe(catchError(() => of([] as T[])));
+}
 
 /** Recursos con CRUD completo en el backend. */
 export type Recurso = 'productos' | 'insumos' | 'clientes' | 'proveedores' | 'ciudades';

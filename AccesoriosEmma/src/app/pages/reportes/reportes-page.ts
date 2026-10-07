@@ -13,7 +13,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { debounceTime } from 'rxjs';
-import { ApiService } from '../../core/api.service';
+import { ApiService, sinError } from '../../core/api.service';
 import {
   Ciudad, Cliente, Insumo, Producto, Proveedor, Reporte, TipoDato, TipoReporte, UsuarioResumen,
 } from '../../core/models';
@@ -226,12 +226,12 @@ export class ReportesPage implements OnInit {
   readonly descargando = signal(false);
   readonly error = signal('');
 
-  readonly clientes = toSignal(this.api.clientes(), { initialValue: [] as Cliente[] });
-  readonly productos = toSignal(this.api.productos(), { initialValue: [] as Producto[] });
-  readonly insumos = toSignal(this.api.insumos(), { initialValue: [] as Insumo[] });
-  readonly proveedores = toSignal(this.api.proveedores(), { initialValue: [] as Proveedor[] });
-  readonly ciudades = toSignal(this.api.ciudades(), { initialValue: [] as Ciudad[] });
-  readonly usuarios = toSignal(this.api.usuarios(), { initialValue: [] as UsuarioResumen[] });
+  readonly clientes = toSignal(sinError(this.api.clientes()), { initialValue: [] as Cliente[] });
+  readonly productos = toSignal(sinError(this.api.productos()), { initialValue: [] as Producto[] });
+  readonly insumos = toSignal(sinError(this.api.insumos()), { initialValue: [] as Insumo[] });
+  readonly proveedores = toSignal(sinError(this.api.proveedores()), { initialValue: [] as Proveedor[] });
+  readonly ciudades = toSignal(sinError(this.api.ciudades()), { initialValue: [] as Ciudad[] });
+  readonly usuarios = toSignal(sinError(this.api.usuarios()), { initialValue: [] as UsuarioResumen[] });
 
   readonly filtros = new FormGroup({
     desde: new FormControl<string | null>(hoy().slice(0, 8) + '01'),

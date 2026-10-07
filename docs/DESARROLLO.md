@@ -101,8 +101,14 @@ npm install
 npm start                              # http://localhost:4200
 ```
 
-En desarrollo la URL de la API sale de `src/environments/environment.development.ts`
-(`http://127.0.0.1:8000/api`).
+En desarrollo `apiUrl` es `/api` (`src/environments/environment.development.ts`) y el **proxy de
+Angular** (`proxy.conf.json`, configurado en `angular.json` → `serve.options.proxyConfig`) reenvía
+esas peticiones a `http://127.0.0.1:8000`. Así no hace falta CORS en desarrollo. Si cambiás el puerto
+del backend, cambialo en `proxy.conf.json` y reiniciá `npm start`.
+
+> Si la consola del navegador muestra errores `HttpErrorResponse` con `status: 200` y `ok: false`,
+> la petición recibió HTML en lugar de JSON: `apiUrl` apunta al servidor de Angular sin proxy, o el
+> proxy no está activo. Si muestra *"No se pudo conectar con el servidor"*, el backend no está corriendo.
 
 ### Comandos útiles
 

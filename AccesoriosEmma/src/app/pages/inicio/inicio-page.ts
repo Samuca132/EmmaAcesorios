@@ -9,6 +9,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { NotificacionService } from '../../core/notificacion.service';
+import { catchError, of } from 'rxjs';
 
 @Component({
   selector: 'app-inicio-page',
@@ -100,5 +102,13 @@ import { AuthService } from '../../core/auth.service';
 })
 export class InicioPage {
   readonly auth = inject(AuthService);
-  readonly resumen = toSignal(inject(ApiService).dashboard());
+  private readonly notificacion = inject(NotificacionService);
+  readonly resumen = toSignal(
+    inject(ApiService).dashboard().pipe(
+      catchError((err) => {
+        this.notificacion.error(err);
+        return of(undefined);
+      }),
+    ),
+  );
 }
