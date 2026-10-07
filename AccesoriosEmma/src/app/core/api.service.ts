@@ -60,16 +60,27 @@ export class ApiService {
     return this.http.get<Compra[]>(`${this.url}/compras`, { params: this.params(filtros) });
   }
 
-  registrarCompra(datos: unknown): Observable<Compra> {
-    return this.http.post<Compra>(`${this.url}/compras`, datos);
+  /** Registra una o más compras al mismo proveedor en una sola operación. */
+  registrarCompras(datos: {
+    proveedorId: number;
+    fecha: string | null;
+    items: { insumoId: number; cantidad: number; costo: number }[];
+  }): Observable<Compra[]> {
+    return this.http.post<Compra[]>(`${this.url}/compras`, datos);
   }
 
   canjes(): Observable<Canje[]> {
     return this.http.get<Canje[]>(`${this.url}/canjes`);
   }
 
-  registrarCanje(datos: unknown): Observable<Canje> {
-    return this.http.post<Canje>(`${this.url}/canjes`, datos);
+  /** Registra uno o más canjes con el mismo proveedor en una sola operación. */
+  registrarCanjes(datos: {
+    proveedorId: number;
+    descuentoProducto: number | null;
+    descuentoInsumo: number | null;
+    items: { productoId: number; cantidadProducto: number; insumoId: number; cantidadInsumo: number }[];
+  }): Observable<Canje[]> {
+    return this.http.post<Canje[]>(`${this.url}/canjes`, datos);
   }
 
   ventas(filtros: Filtros = {}): Observable<Ticket[]> {

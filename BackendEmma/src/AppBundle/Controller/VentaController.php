@@ -9,7 +9,6 @@ use AppBundle\Repository\TicketRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
@@ -69,20 +68,10 @@ class VentaController extends ApiController
         $data = $this->getJson($request);
         if ($errores = $this->validar($data, [
             'clienteId' => self::entero(true, 1),
-            'items' => [
-                new Assert\NotBlank(['message' => 'Agregá al menos un producto.']),
-                new Assert\Type('array'),
-                new Assert\Count(['min' => 1, 'max' => 100]),
-                new Assert\All([
-                    new Assert\Collection([
-                        'fields' => [
-                            'productoId' => self::entero(true, 1),
-                            'cantidad' => self::entero(true, 1),
-                        ],
-                        'missingFieldsMessage' => 'Este campo es obligatorio.',
-                    ]),
-                ]),
-            ],
+            'items' => self::renglones([
+                'productoId' => self::entero(true, 1),
+                'cantidad' => self::entero(true, 1),
+            ]),
         ])) {
             return $errores;
         }
@@ -100,7 +89,7 @@ class VentaController extends ApiController
         }
         ksort($cantidades); // orden fijo de bloqueo para evitar deadlocks
 
-        $ticket = new Ticket($cliente);
+        $ticket = new Ticket($cliente, $this->getUser());
         $this->em->beginTransaction();
         try {
             foreach ($cantidades as $productoId => $cantidad) {

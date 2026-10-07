@@ -49,9 +49,18 @@ class Ticket
      */
     private $items;
 
-    public function __construct(Cliente $cliente)
+    /**
+     * Usuario que registró la operación (null en datos anteriores a este registro).
+     *
+     * @ORM\ManyToOne(targetEntity="Usuario")
+     * @ORM\JoinColumn(name="IDUsuario", referencedColumnName="IDUsuario", nullable=true)
+     */
+    private $usuario;
+
+    public function __construct(Cliente $cliente, Usuario $usuario = null)
     {
         $this->cliente = $cliente;
+        $this->usuario = $usuario;
         $this->fecha = new \DateTime();
         $this->items = new ArrayCollection();
     }
@@ -87,6 +96,19 @@ class Ticket
         return $this->items;
     }
 
+    /** @return Usuario|null */
+    public function getUsuario()
+    {
+        return $this->usuario;
+    }
+
+    public function setUsuario(Usuario $usuario = null)
+    {
+        $this->usuario = $usuario;
+
+        return $this;
+    }
+
     public function toArray($conItems = false)
     {
         $ciudad = $this->cliente->getCiudad();
@@ -98,6 +120,7 @@ class Ticket
             'ciudad' => $ciudad ? $ciudad->getNombre() : null,
             'cantidadProductos' => (int) $this->cantidadProductos,
             'total' => (float) $this->total,
+            'usuario' => $this->usuario ? $this->usuario->getNombre() : null,
         ];
 
         if ($conItems) {

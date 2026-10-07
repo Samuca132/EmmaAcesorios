@@ -20,9 +20,10 @@ class TicketRepository extends ServiceEntityRepository
     public function listar(array $filtros = [])
     {
         $qb = $this->createQueryBuilder('t')
-            ->addSelect('c', 'ci')
+            ->addSelect('c', 'ci', 'u')
             ->join('t.cliente', 'c')
             ->leftJoin('c.ciudad', 'ci')
+            ->leftJoin('t.usuario', 'u')
             ->orderBy('t.fecha', 'DESC')->addOrderBy('t.id', 'DESC');
 
         if (!empty($filtros['clienteId'])) {
@@ -51,9 +52,10 @@ class TicketRepository extends ServiceEntityRepository
     public function buscarConItems($id)
     {
         return $this->createQueryBuilder('t')
-            ->addSelect('c', 'ci', 'v', 'p')
+            ->addSelect('c', 'ci', 'v', 'p', 'u')
             ->join('t.cliente', 'c')
             ->leftJoin('c.ciudad', 'ci')
+            ->leftJoin('t.usuario', 'u')
             ->leftJoin('t.items', 'v')
             ->leftJoin('v.producto', 'p')
             ->where('t.id = :id')->setParameter('id', (int) $id)

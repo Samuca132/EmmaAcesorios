@@ -67,6 +67,14 @@ class Canje
      */
     private $profit = '0';
 
+    /**
+     * Usuario que registró la operación (null en datos anteriores a este registro).
+     *
+     * @ORM\ManyToOne(targetEntity="Usuario")
+     * @ORM\JoinColumn(name="IDUsuario", referencedColumnName="IDUsuario", nullable=true)
+     */
+    private $usuario;
+
     public function __construct()
     {
         $this->fecha = new \DateTime('today');
@@ -134,6 +142,19 @@ class Canje
         return $this;
     }
 
+    /** @return Usuario|null */
+    public function getUsuario()
+    {
+        return $this->usuario;
+    }
+
+    public function setUsuario(Usuario $usuario = null)
+    {
+        $this->usuario = $usuario;
+
+        return $this;
+    }
+
     /**
      * Ganancia = valor de los insumos recibidos - valor de los productos entregados,
      * aplicando los descuentos (en %) acordados.
@@ -161,6 +182,7 @@ class Canje
             'cantidadProducto' => (int) $this->cantidadProducto,
             'cantidadInsumo' => (int) $this->cantidadInsumo,
             'profit' => (float) $this->profit,
+            'usuario' => $this->usuario ? $this->usuario->getNombre() : null,
         ];
     }
 }
