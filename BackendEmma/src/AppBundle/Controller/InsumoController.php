@@ -2,76 +2,80 @@
 
 namespace AppBundle\Controller;
 
+use AppBundle\Entity\Insumo;
 use AppBundle\Repository\InsumoRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class InsumoController extends ApiController
 {
     private $insumos;
 
-    public function __construct(ValidatorInterface $validator, InsumoRepository $insumos)
+    public function __construct(ValidatorInterface $validator, EntityManagerInterface $em, InsumoRepository $insumos)
     {
-        parent::__construct($validator);
+        parent::__construct($validator, $em);
         $this->insumos = $insumos;
     }
 
     public function listar(Request $request)
     {
-        return new JsonResponse($this->insumos->listar($request->query->get('q')));
+        return new JsonResponse(array_map(function (Insumo $i) {
+            return $i->toArray();
+        }, $this->insumos->listar($request->query->get('q'))));
     }
 
     public function ver($id)
     {
-        $insumo = $this->insumos->buscar($id);
-        if (!$insumo) {
-            throw $this->noEncontrado('Insumo');
-        }
-
-        return new JsonResponse($insumo);
+        return new JsonResponse($this->buscar($id)->toArray());
     }
 
     public function crear(Request $request)
     {
-        $data = $this->getJson($request);
-        if ($errores = $this->validar($data, $this->reglas())) {
-            return $errores;
-        }
-
-        return new JsonResponse($this->insumos->crear($data), 201);
+        return $this->guardar(new Insumo(), $this->getJson($request), 201);
     }
 
     public function editar(Request $request, $id)
     {
-        if (!$this->insumos->buscar($id)) {
-            throw $this->noEncontrado('Insumo');
-        }
-        $data = $this->getJson($request);
-        if ($errores = $this->validar($data, $this->reglas())) {
-            return $errores;
-        }
-
-        return new JsonResponse($this->insumos->actualizar($id, $data));
+        return $this->guardar($this->buscar($id), $this->getJson($request), 200);
     }
 
     public function borrar($id)
     {
-        if (!$this->insumos->borrar($id)) {
-            throw $this->noEncontrado('Insumo');
-        }
+        $this->buscar($id)->darDeBaja();
+        $this->em->flush();
 
         return new JsonResponse(null, 204);
     }
 
-    private function reglas()
+    private function guardar(Insumo $insumo, array $data, $status)
     {
-        return [
-            'nombre' => self::texto(50),
-            'stock' => self::entero(),
-            'precio' => self::numero(),
-            'descuentoCanje' => self::opcional(array_merge(self::entero(false), [new Assert\LessThanOrEqual(100)])),
-        ];
+        $insumo
+            ->setNombre(self::valor($data, 'nombre'))
+            ->setStock(self::valor($data, 'stock'))
+            ->setPrecio(self::valor($data, 'precio'))
+            ->setDescuentoCanje(self::valor($data, 'descuentoCanje'));
+
+        if ($errores = $this->validarEntidad($insumo)) {
+            $this->em->clear();
+
+            return $errores;
+        }
+
+        $this->em->persist($insumo);
+        $this->em->flush();
+
+        return new JsonResponse($insumo->toArray(), $status);
+    }
+
+    private function buscar($id)
+    {
+        $insumo = $this->insumos->buscarVisible($id);
+        if (!$insumo) {
+            throw $this->noEncontrado('Insumo');
+        }
+
+        return $insumo;
     }
 }

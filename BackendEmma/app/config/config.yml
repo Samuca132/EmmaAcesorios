@@ -15,7 +15,7 @@ framework:
     router:
         resource: '%kernel.project_dir%/app/config/routing.yml'
         strict_requirements: ~
-    validation: { enable_annotations: false }
+    validation: { enable_annotations: true }
     default_locale: '%locale%'
     translator: { fallbacks: ['%locale%'] }
     trusted_hosts: ~
@@ -29,6 +29,13 @@ doctrine:
     dbal:
         url: '%env(DATABASE_URL)%'
         charset: utf8mb4
+        default_table_options:
+            charset: utf8mb4
+            collate: utf8mb4_general_ci
+    orm:
+        auto_generate_proxy_classes: '%kernel.debug%'
+        naming_strategy: doctrine.orm.naming_strategy.underscore
+        auto_mapping: true
 
 monolog:
     handlers:

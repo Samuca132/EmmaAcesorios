@@ -2,82 +2,43 @@
 
 namespace AppBundle\Repository;
 
-use Doctrine\DBAL\Connection;
+use AppBundle\Entity\Compra;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Common\Persistence\ManagerRegistry;
 
-class CompraRepository
+class CompraRepository extends ServiceEntityRepository
 {
-    const SELECT = 'SELECT c.IDCompra, c.FechaCompra, c.IDProveedor, c.IDInsumo, c.cantidad, c.costo,
-                           p.nombre AS proveedor, i.NombreInsumo AS insumo
-                      FROM compras c
-                      LEFT JOIN proveedores p ON p.IDProveedor = c.IDProveedor
-                      LEFT JOIN insumo i ON i.IDInsumo = c.IDInsumo';
-
-    private $db;
-    private $insumos;
-
-    public function __construct(Connection $db, InsumoRepository $insumos)
+    public function __construct(ManagerRegistry $registry)
     {
-        $this->db = $db;
-        $this->insumos = $insumos;
-    }
-
-    public function listar(array $filtros = [])
-    {
-        $where = [];
-        $params = [];
-        if (!empty($filtros['proveedorId'])) {
-            $where[] = 'c.IDProveedor = ?';
-            $params[] = (int) $filtros['proveedorId'];
-        }
-        if (!empty($filtros['insumoId'])) {
-            $where[] = 'c.IDInsumo = ?';
-            $params[] = (int) $filtros['insumoId'];
-        }
-        $sql = self::SELECT.($where ? ' WHERE '.implode(' AND ', $where) : '').' ORDER BY c.FechaCompra DESC, c.IDCompra DESC';
-
-        return array_map([$this, 'mapear'], $this->db->fetchAll($sql, $params));
-    }
-
-    public function buscar($id)
-    {
-        $fila = $this->db->fetchAssoc(self::SELECT.' WHERE c.IDCompra = ?', [(int) $id]);
-
-        return $fila ? $this->mapear($fila) : null;
+        parent::__construct($registry, Compra::class);
     }
 
     /**
-     * Registra la compra y suma el stock del insumo en una única transacción.
+     * @return Compra[]
      */
-    public function crear(array $d)
+    public function listar(array $filtros = [])
     {
-        $id = $this->db->transactional(function (Connection $db) use ($d) {
-            $db->insert('compras', [
-                'FechaCompra' => !empty($d['fecha']) ? $d['fecha'] : date('Y-m-d'),
-                'IDProveedor' => (int) $d['proveedorId'],
-                'IDInsumo' => (int) $d['insumoId'],
-                'cantidad' => (int) $d['cantidad'],
-                'costo' => $d['costo'],
-            ]);
-            $id = $db->lastInsertId();
-            $this->insumos->sumarStock($d['insumoId'], $d['cantidad']);
+        $qb = $this->createQueryBuilder('c')
+            ->addSelect('p', 'i')
+            ->join('c.proveedor', 'p')
+            ->join('c.insumo', 'i')
+            ->orderBy('c.fecha', 'DESC')->addOrderBy('c.id', 'DESC');
 
-            return $id;
-        });
+        if (!empty($filtros['proveedorId'])) {
+            $qb->andWhere('p.id = :proveedor')->setParameter('proveedor', (int) $filtros['proveedorId']);
+        }
+        if (!empty($filtros['insumoId'])) {
+            $qb->andWhere('i.id = :insumo')->setParameter('insumo', (int) $filtros['insumoId']);
+        }
 
-        return $this->buscar($id);
+        return $qb->getQuery()->getResult();
     }
 
-    private function mapear(array $f)
+    public function totalDesde(\DateTime $desde)
     {
-        return [
-            'id' => (int) $f['IDCompra'],
-            'fecha' => $f['FechaCompra'],
-            'proveedorId' => (int) $f['IDProveedor'],
-            'proveedor' => $f['proveedor'],
-            'insumoId' => (int) $f['IDInsumo'],
-            'insumo' => $f['insumo'],
-            'cantidad' => (int) $f['cantidad'],
-            'costo' => (float) $f['costo'],
-        ];
+        return (float) $this->createQueryBuilder('c')
+            ->select('COALESCE(SUM(c.costo), 0)')
+            ->where('c.fecha >= :desde')->setParameter('desde', $desde)
+            ->getQuery()->getSingleScalarResult();
     }
 }

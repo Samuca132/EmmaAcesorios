@@ -9,7 +9,7 @@ npm install
 npm start            # http://localhost:4200
 ```
 
-Espera el backend en `http://localhost:8000/api` (ver `src/environments/environment.development.ts`).
+Espera el backend en `http://127.0.0.1:8000/api` (`php bin/console server:run`) (ver `src/environments/environment.development.ts`).
 
 ## Producción
 

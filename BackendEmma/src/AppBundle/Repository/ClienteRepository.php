@@ -2,82 +2,67 @@
 
 namespace AppBundle\Repository;
 
-use Doctrine\DBAL\Connection;
+use AppBundle\Entity\Cliente;
+use AppBundle\Entity\Ticket;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Common\Persistence\ManagerRegistry;
 
-class ClienteRepository
+class ClienteRepository extends ServiceEntityRepository
 {
-    const SELECT = 'SELECT cl.IDCliente, cl.nombreCliente, cl.IDCiudad, cl.telefonoCliente,
-                           ci.NombreCiudad,
-                           (SELECT COUNT(*) FROM ticket t WHERE t.IDCliente = cl.IDCliente) AS compras,
-                           (SELECT COALESCE(SUM(t.Valor), 0) FROM ticket t WHERE t.IDCliente = cl.IDCliente) AS totalComprado
-                      FROM cliente cl
-                      LEFT JOIN ciudad ci ON ci.IDCiudad = cl.IDCiudad';
-
-    private $db;
-
-    public function __construct(Connection $db)
+    public function __construct(ManagerRegistry $registry)
     {
-        $this->db = $db;
+        parent::__construct($registry, Cliente::class);
     }
 
-    public function listar($busqueda = null)
+    /**
+     * Clientes visibles con la cantidad de compras y el total comprado.
+     *
+     * @return array[] cada fila: [0 => Cliente, 'compras' => int, 'totalComprado' => string]
+     */
+    public function listarConTotales($busqueda = null)
     {
-        $sql = self::SELECT.' WHERE cl.visibility = 1';
-        $params = [];
+        $qb = $this->consultaConTotales()->orderBy('c.nombre');
+
         if ($busqueda) {
-            $sql .= ' AND (cl.nombreCliente LIKE ? OR ci.NombreCiudad LIKE ? OR cl.telefonoCliente LIKE ?)';
-            $params = array_fill(0, 3, '%'.$busqueda.'%');
+            $qb->andWhere('c.nombre LIKE :q OR ci.nombre LIKE :q OR c.telefono LIKE :q')
+                ->setParameter('q', '%'.$busqueda.'%');
         }
-        $sql .= ' ORDER BY cl.nombreCliente';
 
-        return array_map([$this, 'mapear'], $this->db->fetchAll($sql, $params));
+        return $qb->getQuery()->getResult();
     }
 
-    public function buscar($id)
+    /**
+     * @return array|null [0 => Cliente, 'compras' => int, 'totalComprado' => string]
+     */
+    public function buscarConTotales($id)
     {
-        $fila = $this->db->fetchAssoc(self::SELECT.' WHERE cl.IDCliente = ? AND cl.visibility = 1', [(int) $id]);
-
-        return $fila ? $this->mapear($fila) : null;
+        return $this->consultaConTotales()
+            ->andWhere('c.id = :id')->setParameter('id', (int) $id)
+            ->getQuery()->getOneOrNullResult();
     }
 
-    public function crear(array $d)
+    /**
+     * @return Cliente|null
+     */
+    public function buscarVisible($id)
     {
-        $this->db->insert('cliente', $this->columnas($d) + ['visibility' => 1]);
-
-        return $this->buscar($this->db->lastInsertId());
+        return $this->findOneBy(['id' => (int) $id, 'visible' => true]);
     }
 
-    public function actualizar($id, array $d)
+    public function contarVisibles()
     {
-        $this->db->update('cliente', $this->columnas($d), ['IDCliente' => (int) $id]);
-
-        return $this->buscar($id);
+        return (int) $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')->where('c.visible = true')
+            ->getQuery()->getSingleScalarResult();
     }
 
-    public function borrar($id)
+    private function consultaConTotales()
     {
-        return $this->db->update('cliente', ['visibility' => 0], ['IDCliente' => (int) $id]) > 0;
-    }
-
-    private function columnas(array $d)
-    {
-        return [
-            'nombreCliente' => trim($d['nombre']),
-            'IDCiudad' => isset($d['ciudadId']) ? (int) $d['ciudadId'] : null,
-            'telefonoCliente' => isset($d['telefono']) ? trim($d['telefono']) : '',
-        ];
-    }
-
-    private function mapear(array $f)
-    {
-        return [
-            'id' => (int) $f['IDCliente'],
-            'nombre' => $f['nombreCliente'],
-            'ciudadId' => $f['IDCiudad'] !== null ? (int) $f['IDCiudad'] : null,
-            'ciudad' => $f['NombreCiudad'],
-            'telefono' => $f['telefonoCliente'],
-            'compras' => (int) $f['compras'],
-            'totalComprado' => (float) $f['totalComprado'],
-        ];
+        return $this->createQueryBuilder('c')
+            ->addSelect('ci')
+            ->addSelect(sprintf('(SELECT COUNT(t1.id) FROM %s t1 WHERE t1.cliente = c) AS compras', Ticket::class))
+            ->addSelect(sprintf('(SELECT COALESCE(SUM(t2.total), 0) FROM %s t2 WHERE t2.cliente = c) AS totalComprado', Ticket::class))
+            ->leftJoin('c.ciudad', 'ci')
+            ->where('c.visible = true');
     }
 }

@@ -2,6 +2,7 @@
 
 namespace AppBundle\Controller;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,9 +20,13 @@ abstract class ApiController extends AbstractController
     /** @var ValidatorInterface */
     protected $validator;
 
-    public function __construct(ValidatorInterface $validator)
+    /** @var EntityManagerInterface */
+    protected $em;
+
+    public function __construct(ValidatorInterface $validator, EntityManagerInterface $em)
     {
         $this->validator = $validator;
+        $this->em = $em;
     }
 
     /**
@@ -52,6 +57,27 @@ abstract class ApiController extends AbstractController
             'missingFieldsMessage' => 'Este campo es obligatorio.',
         ]));
 
+        return $this->respuestaDeErrores($violations);
+    }
+
+    /**
+     * Valida una entidad con las restricciones @Assert de sus propiedades.
+     * Devuelve null si es válida o una respuesta 422.
+     *
+     * @param array $campos traduce propiedades de la entidad a los nombres de la API
+     */
+    protected function validarEntidad($entidad, array $campos = [])
+    {
+        return $this->respuestaDeErrores($this->validator->validate($entidad), $campos);
+    }
+
+    protected function errorDeCampo($campo, $mensaje)
+    {
+        return new JsonResponse(['message' => 'Datos inválidos.', 'errors' => [$campo => $mensaje]], 422);
+    }
+
+    private function respuestaDeErrores($violations, array $campos = [])
+    {
         if (count($violations) === 0) {
             return null;
         }
@@ -60,10 +86,22 @@ abstract class ApiController extends AbstractController
         foreach ($violations as $violation) {
             // "[items][0][cantidad]" => "items.0.cantidad"
             $campo = str_replace('][', '.', trim($violation->getPropertyPath(), '[]'));
-            $errors[$campo] = $violation->getMessage();
+            $errors[isset($campos[$campo]) ? $campos[$campo] : $campo] = $violation->getMessage();
         }
 
         return new JsonResponse(['message' => 'Datos inválidos.', 'errors' => $errors], 422);
+    }
+
+    /**
+     * Valor de un campo opcional del JSON, recortando espacios en los textos.
+     */
+    protected static function valor(array $data, $campo, $porDefecto = null)
+    {
+        if (!array_key_exists($campo, $data) || $data[$campo] === null) {
+            return $porDefecto;
+        }
+
+        return is_string($data[$campo]) ? trim($data[$campo]) : $data[$campo];
     }
 
     protected function noEncontrado($recurso = 'Registro')

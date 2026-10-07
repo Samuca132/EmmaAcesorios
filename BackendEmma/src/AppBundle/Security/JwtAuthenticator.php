@@ -53,7 +53,7 @@ class JwtAuthenticator extends AbstractGuardAuthenticator
             throw new CustomUserMessageAuthenticationException('Sesión inválida o vencida.');
         }
 
-        $usuario = $this->usuarios->buscarPorId($payload->sub);
+        $usuario = $this->usuarios->find((int) $payload->sub);
         if (!$usuario || !$usuario->isEnabled()) {
             throw new CustomUserMessageAuthenticationException('Sesión inválida o vencida.');
         }

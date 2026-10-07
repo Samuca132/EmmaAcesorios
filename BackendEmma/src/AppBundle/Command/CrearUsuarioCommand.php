@@ -3,7 +3,8 @@
 namespace AppBundle\Command;
 
 use AppBundle\Repository\UsuarioRepository;
-use AppBundle\Security\Usuario;
+use AppBundle\Entity\Usuario;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -22,12 +23,14 @@ class CrearUsuarioCommand extends Command
 {
     protected static $defaultName = 'app:usuario:crear';
 
+    private $em;
     private $usuarios;
     private $encoder;
 
-    public function __construct(UsuarioRepository $usuarios, UserPasswordEncoderInterface $encoder)
+    public function __construct(EntityManagerInterface $em, UsuarioRepository $usuarios, UserPasswordEncoderInterface $encoder)
     {
         parent::__construct();
+        $this->em = $em;
         $this->usuarios = $usuarios;
         $this->encoder = $encoder;
     }
@@ -62,11 +65,13 @@ class CrearUsuarioCommand extends Command
             ? Passwords::preguntar($io)
             : Passwords::generar();
 
-        $rol = $input->getOption('admin') ? Usuario::ROL_ADMIN : 2;
-        $hash = $this->encoder->encodePassword(new Usuario(0, '', $email, '', $rol, true), $password);
-        $id = $this->usuarios->crear($input->getArgument('nombre'), $email, $hash, $rol);
+        $rol = $input->getOption('admin') ? Usuario::ROL_ADMIN : Usuario::ROL_USUARIO;
+        $usuario = new Usuario($email, $input->getArgument('nombre'), $rol);
+        $usuario->setPassword($this->encoder->encodePassword($usuario, $password));
+        $this->em->persist($usuario);
+        $this->em->flush();
 
-        $io->success(sprintf('Usuario #%d creado: %s', $id, $email));
+        $io->success(sprintf('Usuario #%d creado: %s', $usuario->getId(), $email));
         if (!$input->getOption('preguntar')) {
             $io->writeln('Contraseña generada (guardala ahora, no se vuelve a mostrar):');
             $io->writeln('  <info>'.$password.'</info>');

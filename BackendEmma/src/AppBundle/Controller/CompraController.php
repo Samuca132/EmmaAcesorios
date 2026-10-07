@@ -2,9 +2,11 @@
 
 namespace AppBundle\Controller;
 
+use AppBundle\Entity\Compra;
 use AppBundle\Repository\CompraRepository;
 use AppBundle\Repository\InsumoRepository;
 use AppBundle\Repository\ProveedorRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -18,11 +20,12 @@ class CompraController extends ApiController
 
     public function __construct(
         ValidatorInterface $validator,
+        EntityManagerInterface $em,
         CompraRepository $compras,
         ProveedorRepository $proveedores,
         InsumoRepository $insumos
     ) {
-        parent::__construct($validator);
+        parent::__construct($validator, $em);
         $this->compras = $compras;
         $this->proveedores = $proveedores;
         $this->insumos = $insumos;
@@ -30,32 +33,49 @@ class CompraController extends ApiController
 
     public function listar(Request $request)
     {
-        return new JsonResponse($this->compras->listar([
+        return new JsonResponse(array_map(function (Compra $c) {
+            return $c->toArray();
+        }, $this->compras->listar([
             'proveedorId' => $request->query->get('proveedorId'),
             'insumoId' => $request->query->get('insumoId'),
-        ]));
+        ])));
     }
 
+    /**
+     * Registra la compra y suma el stock del insumo en una única transacción.
+     */
     public function crear(Request $request)
     {
         $data = $this->getJson($request);
-        if ($errores = $this->validar($data, [
-            'proveedorId' => self::entero(true, 1),
-            'insumoId' => self::entero(true, 1),
-            'cantidad' => self::entero(true, 1),
-            'costo' => self::numero(),
-            'fecha' => self::opcional([new Assert\Date()]),
-        ])) {
+        if ($errores = $this->validar($data, ['fecha' => self::opcional([new Assert\Date()])])) {
             return $errores;
         }
 
-        if (!$this->proveedores->buscar($data['proveedorId'])) {
-            return $this->error('El proveedor no existe.', 422);
-        }
-        if (!$this->insumos->buscar($data['insumoId'])) {
-            return $this->error('El insumo no existe.', 422);
+        $compra = (new Compra())
+            ->setProveedor($this->proveedores->find((int) self::valor($data, 'proveedorId')))
+            ->setCantidad(self::valor($data, 'cantidad'))
+            ->setCosto(self::valor($data, 'costo'));
+        if ($fecha = self::valor($data, 'fecha')) {
+            $compra->setFecha(new \DateTime($fecha));
         }
 
-        return new JsonResponse($this->compras->crear($data), 201);
+        $this->em->beginTransaction();
+        try {
+            $compra->setInsumo($this->insumos->buscarParaActualizarStock(self::valor($data, 'insumoId', 0)));
+            if ($errores = $this->validarEntidad($compra, ['proveedor' => 'proveedorId', 'insumo' => 'insumoId'])) {
+                $this->em->rollback();
+
+                return $errores;
+            }
+            $compra->getInsumo()->sumarStock($compra->getCantidad());
+            $this->em->persist($compra);
+            $this->em->flush();
+            $this->em->commit();
+        } catch (\Exception $e) {
+            $this->em->rollback();
+            throw $e;
+        }
+
+        return new JsonResponse($compra->toArray(), 201);
     }
 }

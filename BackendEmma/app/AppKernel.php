@@ -15,6 +15,11 @@ class AppKernel extends Kernel
             new AppBundle\AppBundle(),
         ];
 
+        if ($this->getEnvironment() === 'dev') {
+            // php bin/console server:run  /  server:start
+            $bundles[] = new Symfony\Bundle\WebServerBundle\WebServerBundle();
+        }
+
         return $bundles;
     }
 

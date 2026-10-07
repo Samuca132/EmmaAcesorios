@@ -2,82 +2,74 @@
 
 namespace AppBundle\Repository;
 
-use Doctrine\DBAL\Connection;
+use AppBundle\Entity\Producto;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\DBAL\LockMode;
 
-class ProductoRepository
+class ProductoRepository extends ServiceEntityRepository
 {
-    private $db;
-
-    public function __construct(Connection $db)
+    public function __construct(ManagerRegistry $registry)
     {
-        $this->db = $db;
+        parent::__construct($registry, Producto::class);
     }
 
+    /**
+     * @return Producto[]
+     */
     public function listar($busqueda = null)
     {
-        $sql = 'SELECT IDProducto, NombreProducto, stockProducto, PrecioProducto, costeProduccion
-                  FROM producto WHERE visibility = 1';
-        $params = [];
+        $qb = $this->createQueryBuilder('p')
+            ->where('p.visible = true')
+            ->orderBy('p.nombre');
+
         if ($busqueda) {
-            $sql .= ' AND NombreProducto LIKE ?';
-            $params[] = '%'.$busqueda.'%';
+            $qb->andWhere('p.nombre LIKE :q')->setParameter('q', '%'.$busqueda.'%');
         }
-        $sql .= ' ORDER BY NombreProducto';
 
-        return array_map([$this, 'mapear'], $this->db->fetchAll($sql, $params));
+        return $qb->getQuery()->getResult();
     }
 
-    public function buscar($id)
+    /**
+     * @return Producto|null
+     */
+    public function buscarVisible($id)
     {
-        $fila = $this->db->fetchAssoc(
-            'SELECT IDProducto, NombreProducto, stockProducto, PrecioProducto, costeProduccion
-               FROM producto WHERE IDProducto = ? AND visibility = 1',
-            [(int) $id]
-        );
-
-        return $fila ? $this->mapear($fila) : null;
+        return $this->findOneBy(['id' => (int) $id, 'visible' => true]);
     }
 
-    public function crear(array $d)
+    /**
+     * Busca el producto bloqueando la fila (SELECT ... FOR UPDATE) para que
+     * dos ventas simultáneas no descuenten el mismo stock. Usar dentro de
+     * una transacción.
+     *
+     * @return Producto|null
+     */
+    public function buscarParaActualizarStock($id)
     {
-        $this->db->insert('producto', $this->columnas($d) + ['visibility' => 1]);
+        $producto = $this->getEntityManager()->find(Producto::class, (int) $id, LockMode::PESSIMISTIC_WRITE);
 
-        return $this->buscar($this->db->lastInsertId());
+        return $producto && $producto->isVisible() ? $producto : null;
     }
 
-    public function actualizar($id, array $d)
+    public function contarVisibles()
     {
-        $this->db->update('producto', $this->columnas($d), ['IDProducto' => (int) $id]);
-
-        return $this->buscar($id);
+        return (int) $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->where('p.visible = true')
+            ->getQuery()->getSingleScalarResult();
     }
 
-    /** Baja lógica: se conserva para no romper el historial de ventas. */
-    public function borrar($id)
+    /**
+     * @return Producto[]
+     */
+    public function conStockBajo($limite = 5, $max = 10)
     {
-        return $this->db->update('producto', ['visibility' => 0], ['IDProducto' => (int) $id]) > 0;
-    }
-
-
-    private function columnas(array $d)
-    {
-        return [
-            'NombreProducto' => trim($d['nombre']),
-            'stockProducto' => (int) $d['stock'],
-            'PrecioProducto' => $d['precio'],
-            'costeProduccion' => $d['coste'],
-        ];
-    }
-
-    private function mapear(array $f)
-    {
-        return [
-            'id' => (int) $f['IDProducto'],
-            'nombre' => $f['NombreProducto'],
-            'stock' => (int) $f['stockProducto'],
-            'precio' => (float) $f['PrecioProducto'],
-            'coste' => (float) $f['costeProduccion'],
-            'ganancia' => round((float) $f['PrecioProducto'] - (float) $f['costeProduccion'], 2),
-        ];
+        return $this->createQueryBuilder('p')
+            ->where('p.visible = true AND p.stock <= :limite')
+            ->setParameter('limite', $limite)
+            ->orderBy('p.stock')->addOrderBy('p.nombre')
+            ->setMaxResults($max)
+            ->getQuery()->getResult();
     }
 }

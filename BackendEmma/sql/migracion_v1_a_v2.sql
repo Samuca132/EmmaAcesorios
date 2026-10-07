@@ -1,7 +1,23 @@
 -- =====================================================================
 -- Emma Accesorios - Migración de la base existente (v1) al esquema v2
--- Pensado para MariaDB 10.4 (XAMPP).  HACÉ UN BACKUP ANTES DE CORRERLO:
---   mysqldump -u root emmaaccesorios > backup_emmaaccesorios.sql
+-- Pensado para MariaDB 10.4 (XAMPP).
+--
+-- Este script hace SOLO lo que Doctrine no puede hacer sin perder datos
+-- (convertir columnas VARCHAR a INT, crear tickets para las ventas viejas,
+-- invalidar las contraseñas guardadas en texto plano). El resto (claves
+-- foráneas, índices, columnas que sobran) lo completa Doctrine.
+--
+-- Pasos:
+--   1) Backup:   mysqldump -u root emmaaccesorios > backup_emmaaccesorios.sql
+--   2) Este archivo (UNA sola vez):
+--                mysql -u root emmaaccesorios < sql/migracion_v1_a_v2.sql
+--   3) Revisar lo que falta y aplicarlo:
+--                php bin/console doctrine:schema:update --dump-sql
+--                php bin/console doctrine:schema:update --force
+--   4) Verificar: php bin/console doctrine:schema:validate
+--
+-- Ojo: el paso 3 BORRA las columnas de imágenes (ImagenProducto,
+-- ImagenInsumo, Imagen) y ciudad.ClientesCiudad, que ya no se usan.
 -- =====================================================================
 
 USE `emmaaccesorios`;
@@ -22,9 +38,8 @@ ALTER TABLE `compras`  MODIFY `costo`  DECIMAL(12,2) NOT NULL;
 ALTER TABLE `canjes`   MODIFY `Profit` DECIMAL(12,2) NOT NULL DEFAULT 0;
 
 -- ---------------------------------------------------------------------
--- 2) Imágenes: ya no se usan. Se vuelven opcionales para que los altas
---    nuevas no fallen. (Al final del archivo está, comentado, cómo
---    borrarlas definitivamente.)
+-- 2) Imágenes: ya no se usan. Se vuelven opcionales para que las altas
+--    no fallen; doctrine:schema:update las elimina después.
 -- ---------------------------------------------------------------------
 ALTER TABLE `producto` MODIFY `ImagenProducto` LONGBLOB NULL;
 ALTER TABLE `insumo`   MODIFY `ImagenInsumo`   LONGBLOB NULL;
@@ -60,8 +75,7 @@ CREATE TABLE IF NOT EXISTS `ticket` (
   `Fecha`      DATETIME NOT NULL,
   `CProductos` INT NOT NULL DEFAULT 0,
   `Valor`      DECIMAL(12,2) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`IDTicket`),
-  KEY `idx_ticket_cliente` (`IDCliente`)
+  PRIMARY KEY (`IDTicket`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 ALTER TABLE `ticket` MODIFY `Valor` DECIMAL(12,2) NOT NULL DEFAULT 0;
@@ -108,10 +122,7 @@ ALTER TABLE `usuario`
 UPDATE `usuario` SET `PasswordHash` = '!' WHERE `PasswordHash` NOT LIKE '$2y$%';
 
 -- ---------------------------------------------------------------------
--- 6) (OPCIONAL) Borrar definitivamente las imágenes y la tabla de pruebas.
---    Descomentar solo si ya no las vas a necesitar.
+-- 6) (OPCIONAL) La tabla de pruebas `testing` no la usa el sistema y
+--    Doctrine no la toca. Descomentar para borrarla.
 -- ---------------------------------------------------------------------
--- ALTER TABLE `producto` DROP COLUMN `ImagenProducto`;
--- ALTER TABLE `insumo`   DROP COLUMN `ImagenInsumo`;
--- ALTER TABLE `cliente`  DROP COLUMN `Imagen`;
 -- DROP TABLE IF EXISTS `testing`;

@@ -5,7 +5,8 @@ namespace AppBundle\Controller;
 use AppBundle\Repository\UsuarioRepository;
 use AppBundle\Security\JwtManager;
 use AppBundle\Security\LoginThrottle;
-use AppBundle\Security\Usuario;
+use AppBundle\Entity\Usuario;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
@@ -30,12 +31,13 @@ class AuthController extends ApiController
 
     public function __construct(
         ValidatorInterface $validator,
+        EntityManagerInterface $em,
         UsuarioRepository $usuarios,
         UserPasswordEncoderInterface $encoder,
         JwtManager $jwt,
         LoginThrottle $throttle
     ) {
-        parent::__construct($validator);
+        parent::__construct($validator, $em);
         $this->usuarios = $usuarios;
         $this->encoder = $encoder;
         $this->jwt = $jwt;
@@ -64,7 +66,7 @@ class AuthController extends ApiController
         $usuario = $this->usuarios->buscarPorEmail($data['email']);
 
         if (!$usuario) {
-            $this->encoder->isPasswordValid(new Usuario(0, '', '', self::HASH_FALSO, 0, false), $data['password']);
+            $this->encoder->isPasswordValid((new Usuario('', ''))->setPassword(self::HASH_FALSO), $data['password']);
             $this->throttle->registrarFallo($ip);
 
             return $this->error(self::MENSAJE_ERROR, 401);
@@ -75,13 +77,15 @@ class AuthController extends ApiController
         }
 
         if (!$usuario->isEnabled() || !$this->encoder->isPasswordValid($usuario, $data['password'])) {
-            $this->usuarios->registrarLoginFallido($usuario->getId());
+            $usuario->registrarLoginFallido();
+            $this->em->flush();
             $this->throttle->registrarFallo($ip);
 
             return $this->error(self::MENSAJE_ERROR, 401);
         }
 
-        $this->usuarios->registrarLoginExitoso($usuario->getId());
+        $usuario->registrarLoginExitoso();
+        $this->em->flush();
         $this->throttle->limpiar($ip);
 
         return new JsonResponse([
@@ -123,7 +127,8 @@ class AuthController extends ApiController
             return $this->error('La contraseña actual no es correcta.', 422);
         }
 
-        $this->usuarios->cambiarPassword($usuario->getId(), $this->encoder->encodePassword($usuario, $data['nueva']));
+        $usuario->setPassword($this->encoder->encodePassword($usuario, $data['nueva']));
+        $this->em->flush();
 
         return new JsonResponse(['message' => 'Contraseña actualizada.']);
     }
