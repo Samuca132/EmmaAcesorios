@@ -135,11 +135,15 @@ sean accesibles, y `SYMFONY_ENV=prod`.
 | GET/POST | `/api/ciudades` | `{nombre, provincia}` |
 | PUT/DELETE | `/api/ciudades/{id}` | |
 | GET | `/api/provincias` | |
-| GET/POST | `/api/compras` | `{proveedorId, insumoId, cantidad, costo, fecha?}` (suma stock del insumo) |
-| GET/POST | `/api/canjes` | `{proveedorId, productoId, insumoId, cantidadProducto, cantidadInsumo, descuentoProducto?, descuentoInsumo?}` |
+| GET/POST | `/api/compras` | `{proveedorId, fecha?, items: [{insumoId, cantidad, costo}]}` (suma stock de cada insumo) |
+| GET/POST | `/api/canjes` | `{proveedorId, descuentoProducto?, descuentoInsumo?, items: [{productoId, cantidadProducto, insumoId, cantidadInsumo}]}` |
 | GET | `/api/ventas` | Tickets. Filtros: `clienteId`, `productoId`, `ciudadId`, `desde`, `hasta` (YYYY-MM-DD) |
 | POST | `/api/ventas` | `{clienteId, items: [{productoId, cantidad}]}` |
 | GET | `/api/ventas/{id}` | Ticket con sus renglones |
+
+Ventas, compras y canjes aceptan varios renglones por operación y se guardan en una sola transacción
+(si un renglón falla no se guarda ninguno). Cada operación registra el usuario que la hizo
+(columna `IDUsuario`; vale `null` en los registros anteriores a este cambio).
 
 Errores: siempre JSON `{message}`; las validaciones devuelven 422 con `{message, errors: {campo: mensaje}}`.
 

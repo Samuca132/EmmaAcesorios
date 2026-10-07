@@ -157,4 +157,37 @@ abstract class ApiController extends AbstractController
     {
         return new Assert\Optional($constraints);
     }
+
+    /**
+     * Restricción para una lista de renglones (operaciones múltiples).
+     *
+     * @param array $campos restricciones de cada renglón
+     */
+    protected static function renglones(array $campos, $max = 100)
+    {
+        return [
+            new Assert\NotBlank(['message' => 'Agregá al menos un renglón.']),
+            new Assert\Type('array'),
+            new Assert\Count(['min' => 1, 'max' => $max]),
+            new Assert\All([
+                new Assert\Collection([
+                    'fields' => $campos,
+                    'missingFieldsMessage' => 'Este campo es obligatorio.',
+                ]),
+            ]),
+        ];
+    }
+
+    /**
+     * Devuelve los renglones (conservando su índice) ordenados por un campo.
+     * Se usa para bloquear filas siempre en el mismo orden y evitar deadlocks.
+     */
+    protected static function ordenarPor(array $items, $campo)
+    {
+        uasort($items, function ($a, $b) use ($campo) {
+            return $a[$campo] - $b[$campo];
+        });
+
+        return $items;
+    }
 }

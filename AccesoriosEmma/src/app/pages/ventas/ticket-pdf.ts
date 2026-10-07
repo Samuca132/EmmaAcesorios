@@ -21,8 +21,9 @@ export async function descargarTicketPdf(ticket: Ticket): Promise<void> {
   doc.text(`Ticket N° ${ticket.id}`, 30, 44);
   doc.text(`Fecha: ${new Date(ticket.fecha.replace(' ', 'T')).toLocaleString('es-AR')}`, 30, 51);
   doc.text(`Cliente: ${ticket.cliente}`, 30, 58);
+  doc.text(`Atendido por: ${ticket.usuario ?? '—'}`, 30, 65);
 
-  let y = 75;
+  let y = 80;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('Producto', 30, y);

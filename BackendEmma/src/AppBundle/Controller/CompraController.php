@@ -42,33 +42,58 @@ class CompraController extends ApiController
     }
 
     /**
-     * Registra la compra y suma el stock del insumo en una única transacción.
+     * POST /api/compras
+     * {"proveedorId": 1, "fecha": "2026-10-07", "items": [{"insumoId": 2, "cantidad": 10, "costo": 1500}, ...]}
+     *
+     * Registra todos los renglones y suma el stock de cada insumo en una
+     * única transacción: si alguno falla, no se guarda ninguno.
      */
     public function crear(Request $request)
     {
         $data = $this->getJson($request);
-        if ($errores = $this->validar($data, ['fecha' => self::opcional([new Assert\Date()])])) {
+        if ($errores = $this->validar($data, [
+            'proveedorId' => self::entero(true, 1),
+            'fecha' => self::opcional([new Assert\Date()]),
+            'items' => self::renglones([
+                'insumoId' => self::entero(true, 1),
+                'cantidad' => self::entero(true, 1),
+                'costo' => self::numero(),
+            ]),
+        ])) {
             return $errores;
         }
 
-        $compra = (new Compra())
-            ->setProveedor($this->proveedores->find((int) self::valor($data, 'proveedorId')))
-            ->setCantidad(self::valor($data, 'cantidad'))
-            ->setCosto(self::valor($data, 'costo'));
-        if ($fecha = self::valor($data, 'fecha')) {
-            $compra->setFecha(new \DateTime($fecha));
+        $proveedor = $this->proveedores->find($data['proveedorId']);
+        if (!$proveedor) {
+            return $this->errorDeCampo('proveedorId', 'El proveedor no existe.');
         }
+        $fecha = self::valor($data, 'fecha') ? new \DateTime($data['fecha']) : new \DateTime('today');
 
+        $compras = [];
         $this->em->beginTransaction();
         try {
-            $compra->setInsumo($this->insumos->buscarParaActualizarStock(self::valor($data, 'insumoId', 0)));
-            if ($errores = $this->validarEntidad($compra, ['proveedor' => 'proveedorId', 'insumo' => 'insumoId'])) {
-                $this->em->rollback();
+            // Bloquea los insumos siempre en orden de id para evitar deadlocks
+            $insumos = [];
+            foreach (self::ordenarPor($data['items'], 'insumoId') as $i => $item) {
+                if (!$insumos[$i] = $this->insumos->buscarParaActualizarStock($item['insumoId'])) {
+                    $this->em->rollback();
 
-                return $errores;
+                    return $this->errorDeCampo('items.'.$i.'.insumoId', 'El insumo no existe.');
+                }
             }
-            $compra->getInsumo()->sumarStock($compra->getCantidad());
-            $this->em->persist($compra);
+
+            foreach ($data['items'] as $i => $item) {
+                $compra = (new Compra())
+                    ->setProveedor($proveedor)
+                    ->setInsumo($insumos[$i])
+                    ->setCantidad($item['cantidad'])
+                    ->setCosto($item['costo'])
+                    ->setFecha($fecha)
+                    ->setUsuario($this->getUser());
+                $insumos[$i]->sumarStock($item['cantidad']);
+                $this->em->persist($compra);
+                $compras[] = $compra;
+            }
             $this->em->flush();
             $this->em->commit();
         } catch (\Exception $e) {
@@ -76,6 +101,8 @@ class CompraController extends ApiController
             throw $e;
         }
 
-        return new JsonResponse($compra->toArray(), 201);
+        return new JsonResponse(array_map(function (Compra $c) {
+            return $c->toArray();
+        }, $compras), 201);
     }
 }

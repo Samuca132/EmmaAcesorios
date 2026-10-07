@@ -19,9 +19,10 @@ class CompraRepository extends ServiceEntityRepository
     public function listar(array $filtros = [])
     {
         $qb = $this->createQueryBuilder('c')
-            ->addSelect('p', 'i')
+            ->addSelect('p', 'i', 'u')
             ->join('c.proveedor', 'p')
             ->join('c.insumo', 'i')
+            ->leftJoin('c.usuario', 'u')
             ->orderBy('c.fecha', 'DESC')->addOrderBy('c.id', 'DESC');
 
         if (!empty($filtros['proveedorId'])) {

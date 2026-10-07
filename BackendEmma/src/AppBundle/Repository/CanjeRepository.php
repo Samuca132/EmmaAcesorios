@@ -19,10 +19,11 @@ class CanjeRepository extends ServiceEntityRepository
     public function listar()
     {
         return $this->createQueryBuilder('c')
-            ->addSelect('p', 'pr', 'i')
+            ->addSelect('p', 'pr', 'i', 'u')
             ->join('c.proveedor', 'p')
             ->join('c.producto', 'pr')
             ->join('c.insumo', 'i')
+            ->leftJoin('c.usuario', 'u')
             ->orderBy('c.fecha', 'DESC')->addOrderBy('c.id', 'DESC')
             ->getQuery()->getResult();
     }

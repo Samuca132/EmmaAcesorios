@@ -88,6 +88,7 @@ export class ClienteDetallePage implements OnInit {
     { clave: 'fecha', titulo: 'Fecha', tipo: 'fechaHora' },
     { clave: 'cantidadProductos', titulo: 'Productos', tipo: 'numero' },
     { clave: 'total', titulo: 'Total', tipo: 'moneda' },
+    { clave: 'usuario', titulo: 'Registró' },
   ];
 
   ngOnInit(): void {

@@ -55,6 +55,14 @@ class Compra
      */
     private $costo;
 
+    /**
+     * Usuario que registró la operación (null en datos anteriores a este registro).
+     *
+     * @ORM\ManyToOne(targetEntity="Usuario")
+     * @ORM\JoinColumn(name="IDUsuario", referencedColumnName="IDUsuario", nullable=true)
+     */
+    private $usuario;
+
     public function __construct()
     {
         $this->fecha = new \DateTime('today');
@@ -104,9 +112,27 @@ class Compra
         return $this;
     }
 
+    public function getCosto()
+    {
+        return (float) $this->costo;
+    }
+
     public function setCosto($costo)
     {
         $this->costo = $costo;
+
+        return $this;
+    }
+
+    /** @return Usuario|null */
+    public function getUsuario()
+    {
+        return $this->usuario;
+    }
+
+    public function setUsuario(Usuario $usuario = null)
+    {
+        $this->usuario = $usuario;
 
         return $this;
     }
@@ -122,6 +148,7 @@ class Compra
             'insumo' => $this->insumo->getNombre(),
             'cantidad' => (int) $this->cantidad,
             'costo' => (float) $this->costo,
+            'usuario' => $this->usuario ? $this->usuario->getNombre() : null,
         ];
     }
 }

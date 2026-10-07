@@ -96,6 +96,7 @@ export class VentasPage implements OnInit {
     { clave: 'ciudad', titulo: 'Ciudad' },
     { clave: 'cantidadProductos', titulo: 'Productos', tipo: 'numero' },
     { clave: 'total', titulo: 'Total', tipo: 'moneda' },
+    { clave: 'usuario', titulo: 'Registró' },
   ];
 
   ngOnInit(): void {

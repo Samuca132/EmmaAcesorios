@@ -69,6 +69,8 @@ export interface Compra {
   insumo: string;
   cantidad: number;
   costo: number;
+  /** Usuario que registró la compra (null en registros anteriores). */
+  usuario: string | null;
 }
 
 export interface Canje {
@@ -83,6 +85,7 @@ export interface Canje {
   cantidadProducto: number;
   cantidadInsumo: number;
   profit: number;
+  usuario: string | null;
 }
 
 export interface TicketItem {
@@ -101,6 +104,7 @@ export interface Ticket {
   ciudad: string | null;
   cantidadProductos: number;
   total: number;
+  usuario: string | null;
   items?: TicketItem[];
 }
 

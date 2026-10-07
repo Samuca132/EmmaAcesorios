@@ -22,6 +22,7 @@ import { descargarTicketPdf } from './ticket-pdf';
           <span><strong>{{ t.cliente }}</strong></span>
           <span class="text-muted">{{ t.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
         </p>
+        <p class="text-muted registro">Registrada por: {{ t.usuario ?? 'sin dato' }}</p>
         <table mat-table [dataSource]="t.items ?? []">
           <ng-container matColumnDef="producto">
             <th mat-header-cell *matHeaderCellDef>Producto</th>
@@ -59,7 +60,8 @@ import { descargarTicketPdf } from './ticket-pdf';
     </mat-dialog-actions>
   `,
   styles: `
-    .cabecera { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .cabecera { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 0; }
+    .registro { margin-top: 4px; font: var(--mat-sys-body-small); }
     table { width: 100%; min-width: 420px; }
     mat-dialog-content { overflow-x: auto; }
     .num { text-align: right; }
