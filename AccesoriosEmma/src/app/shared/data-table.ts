@@ -60,13 +60,17 @@ export interface Columna<T> {
               <th mat-header-cell *matHeaderCellDef mat-sort-header [class.num]="esNumerica(col)">{{ col.titulo }}</th>
               <td mat-cell *matCellDef="let fila" [class.num]="esNumerica(col)"
                   [class.alerta]="col.alertaSi !== undefined && fila[col.clave] <= col.alertaSi">
+                @if (fila[col.clave] === null || fila[col.clave] === undefined || fila[col.clave] === '') {
+                  —
+                } @else {
                 @switch (col.tipo) {
                   @case ('moneda') { {{ fila[col.clave] | currency: 'ARS' : 'symbol-narrow' : '1.2-2' : 'es-AR' }} }
                   @case ('numero') { {{ fila[col.clave] | number: '1.0-2' : 'es-AR' }} }
                   @case ('porcentaje') { {{ fila[col.clave] }}% }
                   @case ('fecha') { {{ fila[col.clave] | date: 'dd/MM/yyyy' }} }
                   @case ('fechaHora') { {{ fila[col.clave] | date: 'dd/MM/yyyy HH:mm' }} }
-                  @default { {{ fila[col.clave] ?? '—' }} }
+                  @default { {{ fila[col.clave] }} }
+                }
                 }
               </td>
             </ng-container>

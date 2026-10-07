@@ -21,6 +21,7 @@
         "doctrine/orm": "^2.7",
         "firebase/php-jwt": "^6.0",
         "phpoffice/phpspreadsheet": "^1.29",
+        "stof/doctrine-extensions-bundle": "~1.3.0",
         "symfony/dotenv": "3.4.*",
         "symfony/monolog-bundle": "^3.5",
         "symfony/symfony": "3.4.*"

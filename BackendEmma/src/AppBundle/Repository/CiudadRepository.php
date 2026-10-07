@@ -22,7 +22,7 @@ class CiudadRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('c')
             ->addSelect(sprintf(
-                '(SELECT COUNT(cl.id) FROM %s cl WHERE cl.ciudad = c AND cl.visible = true) AS clientes',
+                '(SELECT COUNT(cl.id) FROM %s cl WHERE cl.ciudad = c) AS clientes',
                 Cliente::class
             ))
             ->orderBy('c.nombre');

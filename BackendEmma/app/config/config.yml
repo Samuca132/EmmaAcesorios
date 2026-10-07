@@ -36,6 +36,20 @@ doctrine:
         auto_generate_proxy_classes: '%kernel.debug%'
         naming_strategy: doctrine.orm.naming_strategy.underscore
         auto_mapping: true
+        filters:
+            # Oculta automáticamente los registros borrados (deleted_at no nulo).
+            # Los listados históricos lo desactivan (ver Repository/IncluyeBorrados).
+            softdeleteable:
+                class: Gedmo\SoftDeleteable\Filter\SoftDeleteableFilter
+                enabled: true
+
+# Extensiones Gedmo: created_at / updated_at automáticos y borrado lógico
+stof_doctrine_extensions:
+    default_locale: es
+    orm:
+        default:
+            timestampable: true
+            softdeleteable: true
 
 monolog:
     handlers:

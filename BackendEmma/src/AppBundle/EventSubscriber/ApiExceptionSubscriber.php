@@ -52,9 +52,14 @@ class ApiExceptionSubscriber implements EventSubscriberInterface
             return;
         }
         if ($e instanceof HttpExceptionInterface) {
-            $mensaje = $e->getStatusCode() === 404 && strpos($e->getMessage(), 'No route') === 0
-                ? 'Recurso inexistente.'
-                : ($e->getStatusCode() === 405 ? 'Método no permitido.' : $e->getMessage());
+            $mensajes = [403 => 'No tenés permisos para esta acción.', 405 => 'Método no permitido.'];
+            if (isset($mensajes[$e->getStatusCode()])) {
+                $mensaje = $mensajes[$e->getStatusCode()];
+            } elseif ($e->getStatusCode() === 404 && strpos($e->getMessage(), 'No route') === 0) {
+                $mensaje = 'Recurso inexistente.';
+            } else {
+                $mensaje = $e->getMessage();
+            }
             $event->setResponse(new JsonResponse(['message' => $mensaje], $e->getStatusCode(), $e->getHeaders()));
 
             return;

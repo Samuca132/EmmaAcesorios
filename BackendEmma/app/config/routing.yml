@@ -82,3 +82,17 @@ usuarios_listar:
     path: /api/usuarios
     controller: AppBundle\Controller\ReporteController::usuarios
     methods: [GET]
+
+# ---------------- Configuración (solo administradores, ver security.yml) ----------------
+admin_usuarios_listar:
+    path: /api/admin/usuarios
+    controller: AppBundle\Controller\AdminUsuarioController::listar
+    methods: [GET]
+admin_usuarios_crear:
+    path: /api/admin/usuarios
+    controller: AppBundle\Controller\AdminUsuarioController::crear
+    methods: [POST]
+admin_roles:
+    path: /api/admin/roles
+    controller: AppBundle\Controller\AdminUsuarioController::roles
+    methods: [GET]

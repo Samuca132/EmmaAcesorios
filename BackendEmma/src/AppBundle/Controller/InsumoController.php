@@ -41,9 +41,10 @@ class InsumoController extends ApiController
         return $this->guardar($this->buscar($id), $this->getJson($request), 200);
     }
 
+    /** Soft delete: queda en la base con deleted_at y se conserva en el historial. */
     public function borrar($id)
     {
-        $this->buscar($id)->darDeBaja();
+        $this->em->remove($this->buscar($id));
         $this->em->flush();
 
         return new JsonResponse(null, 204);
@@ -71,7 +72,7 @@ class InsumoController extends ApiController
 
     private function buscar($id)
     {
-        $insumo = $this->insumos->buscarVisible($id);
+        $insumo = $this->insumos->buscar($id);
         if (!$insumo) {
             throw $this->noEncontrado('Insumo');
         }

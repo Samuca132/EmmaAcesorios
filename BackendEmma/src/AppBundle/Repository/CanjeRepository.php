@@ -18,6 +18,13 @@ class CanjeRepository extends ServiceEntityRepository
      */
     public function listar()
     {
+        return IncluyeBorrados::ejecutar($this->getEntityManager(), function () {
+            return $this->listarSinFiltro();
+        });
+    }
+
+    private function listarSinFiltro()
+    {
         return $this->createQueryBuilder('c')
             ->addSelect('p', 'pr', 'i', 'u')
             ->join('c.proveedor', 'p')

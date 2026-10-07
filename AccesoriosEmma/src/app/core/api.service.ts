@@ -4,7 +4,7 @@ import { Observable, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   Canje, Ciudad, Cliente, Compra, Dashboard, Insumo, Producto, Proveedor, Provincia, Reporte, Ticket,
-  TipoReporte, UsuarioResumen,
+  TipoReporte, UsuarioResumen, NuevoUsuario, Rol, UsuarioAdmin,
 } from './models';
 
 /**
@@ -102,6 +102,19 @@ export class ApiService {
 
   registrarVenta(datos: { clienteId: number; items: { productoId: number; cantidad: number }[] }): Observable<Ticket> {
     return this.http.post<Ticket>(`${this.url}/ventas`, datos);
+  }
+
+  // ---------- Configuración (solo administradores) ----------
+  adminUsuarios(): Observable<UsuarioAdmin[]> {
+    return this.http.get<UsuarioAdmin[]>(`${this.url}/admin/usuarios`);
+  }
+
+  adminRoles(): Observable<Rol[]> {
+    return this.http.get<Rol[]>(`${this.url}/admin/roles`);
+  }
+
+  crearUsuario(datos: NuevoUsuario): Observable<UsuarioAdmin> {
+    return this.http.post<UsuarioAdmin>(`${this.url}/admin/usuarios`, datos);
   }
 
   // ---------- Reportes ----------

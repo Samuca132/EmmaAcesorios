@@ -3,14 +3,21 @@
 namespace AppBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
+use Gedmo\SoftDeleteable\Traits\SoftDeleteableEntity;
+use Gedmo\Timestampable\Traits\TimestampableEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity(repositoryClass="AppBundle\Repository\CiudadRepository")
  * @ORM\Table(name="ciudad")
+ * @Gedmo\SoftDeleteable(fieldName="deletedAt", timeAware=false, hardDelete=false)
  */
 class Ciudad
 {
+    use TimestampableEntity;
+    use SoftDeleteableEntity;
+
     const PROVINCIAS = [
         1 => 'Córdoba', 2 => 'Buenos Aires', 3 => 'Santa Fe', 4 => 'Mendoza', 5 => 'Tucumán',
         6 => 'Entre Ríos', 7 => 'Salta', 8 => 'Chaco', 9 => 'Corrientes', 10 => 'Santiago del Estero',

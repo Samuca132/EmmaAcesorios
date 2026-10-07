@@ -52,10 +52,11 @@ class CiudadController extends ApiController
     public function borrar($id)
     {
         $ciudad = $this->buscar($id);
+        // Solo cuenta clientes y proveedores activos (no borrados)
         if ($this->ciudades->enUso($ciudad)) {
             return $this->error('No se puede borrar: hay clientes o proveedores en esta ciudad.', 409);
         }
-        $this->em->remove($ciudad);
+        $this->em->remove($ciudad); // soft delete
         $this->em->flush();
 
         return new JsonResponse(null, 204);

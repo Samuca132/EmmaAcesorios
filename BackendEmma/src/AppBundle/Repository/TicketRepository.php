@@ -19,6 +19,13 @@ class TicketRepository extends ServiceEntityRepository
      */
     public function listar(array $filtros = [])
     {
+        return IncluyeBorrados::ejecutar($this->getEntityManager(), function () use ($filtros) {
+            return $this->listarSinFiltro($filtros);
+        });
+    }
+
+    private function listarSinFiltro(array $filtros = [])
+    {
         $qb = $this->createQueryBuilder('t')
             ->addSelect('c', 'ci', 'u')
             ->join('t.cliente', 'c')
@@ -51,6 +58,13 @@ class TicketRepository extends ServiceEntityRepository
      */
     public function buscarConItems($id)
     {
+        return IncluyeBorrados::ejecutar($this->getEntityManager(), function () use ($id) {
+            return $this->buscarConItemsSinFiltro($id);
+        });
+    }
+
+    private function buscarConItemsSinFiltro($id)
+    {
         return $this->createQueryBuilder('t')
             ->addSelect('c', 'ci', 'v', 'p', 'u')
             ->join('t.cliente', 'c')
@@ -66,6 +80,13 @@ class TicketRepository extends ServiceEntityRepository
      * @return array ['cantidad' => int, 'total' => float, 'ganancia' => float]
      */
     public function resumenDesde(\DateTime $desde)
+    {
+        return IncluyeBorrados::ejecutar($this->getEntityManager(), function () use ($desde) {
+            return $this->resumenDesdeSinFiltro($desde);
+        });
+    }
+
+    private function resumenDesdeSinFiltro(\DateTime $desde)
     {
         $tickets = $this->createQueryBuilder('t')
             ->select('COUNT(t.id) AS cantidad, COALESCE(SUM(t.total), 0) AS total')

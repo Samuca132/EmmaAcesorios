@@ -51,10 +51,10 @@ class ClienteController extends ApiController
         return $this->guardar($this->buscar($id), $this->getJson($request), 200);
     }
 
-    /** Baja lógica: el historial de ventas se conserva. */
+    /** Soft delete: el historial de ventas se conserva. */
     public function borrar($id)
     {
-        $this->buscar($id)->darDeBaja();
+        $this->em->remove($this->buscar($id));
         $this->em->flush();
 
         return new JsonResponse(null, 204);
@@ -87,7 +87,7 @@ class ClienteController extends ApiController
 
     private function buscar($id)
     {
-        $cliente = $this->clientes->buscarVisible($id);
+        $cliente = $this->clientes->buscar($id);
         if (!$cliente) {
             throw $this->noEncontrado('Cliente');
         }

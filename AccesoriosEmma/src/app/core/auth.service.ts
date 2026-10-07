@@ -22,6 +22,8 @@ export class AuthService {
 
   readonly usuario = computed(() => this.sesion()?.usuario ?? null);
   readonly autenticado = computed(() => this.sesion() !== null);
+  /** Rol 1 = administrador. */
+  readonly esAdmin = computed(() => this.sesion()?.usuario.rol === 1);
 
   constructor() {
     this.programarExpiracion();

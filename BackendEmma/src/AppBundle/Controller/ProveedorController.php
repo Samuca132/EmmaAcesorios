@@ -45,11 +45,8 @@ class ProveedorController extends ApiController
 
     public function borrar($id)
     {
-        $proveedor = $this->buscar($id);
-        if ($this->proveedores->enUso($proveedor)) {
-            return $this->error('No se puede borrar: el proveedor tiene compras o canjes registrados.', 409);
-        }
-        $this->em->remove($proveedor);
+        // Soft delete: sus compras y canjes siguen apareciendo en el historial
+        $this->em->remove($this->buscar($id));
         $this->em->flush();
 
         return new JsonResponse(null, 204);

@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, invitadoGuard } from './core/auth.guard';
+import { adminGuard, authGuard, invitadoGuard } from './core/auth.guard';
 import { Shell } from './layout/shell';
 
 export const routes: Routes = [
@@ -29,6 +29,12 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/cliente-detalle/cliente-detalle-page').then((m) => m.ClienteDetallePage),
       },
       { path: 'proveedores', title: 'Proveedores · Emma', loadComponent: () => import('./pages/proveedores/proveedores-page').then((m) => m.ProveedoresPage) },
+      {
+        path: 'configuracion',
+        title: 'Configuración · Emma',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./pages/configuracion/configuracion-page').then((m) => m.ConfiguracionPage),
+      },
       { path: 'ciudades', title: 'Ciudades · Emma', loadComponent: () => import('./pages/ciudades/ciudades-page').then((m) => m.CiudadesPage) },
     ],
   },
