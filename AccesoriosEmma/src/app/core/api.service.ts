@@ -1,9 +1,10 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
-  Canje, Ciudad, Cliente, Compra, Dashboard, Insumo, Producto, Proveedor, Provincia, Ticket,
+  Canje, Ciudad, Cliente, Compra, Dashboard, Insumo, Producto, Proveedor, Provincia, Reporte, Ticket,
+  TipoReporte, UsuarioResumen,
 } from './models';
 
 /** Recursos con CRUD completo en el backend. */
@@ -93,6 +94,24 @@ export class ApiService {
 
   registrarVenta(datos: { clienteId: number; items: { productoId: number; cantidad: number }[] }): Observable<Ticket> {
     return this.http.post<Ticket>(`${this.url}/ventas`, datos);
+  }
+
+  // ---------- Reportes ----------
+  usuarios(): Observable<UsuarioResumen[]> {
+    return this.http.get<UsuarioResumen[]>(`${this.url}/usuarios`);
+  }
+
+  reporte(tipo: TipoReporte, filtros: Filtros): Observable<Reporte> {
+    return this.http.get<Reporte>(`${this.url}/reportes/${tipo}`, { params: this.params(filtros) });
+  }
+
+  /** Descarga el reporte como .xlsx (el archivo lo arma el backend). */
+  reporteExcel(tipo: TipoReporte, filtros: Filtros): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.url}/reportes/${tipo}/excel`, {
+      params: this.params(filtros),
+      responseType: 'blob',
+      observe: 'response',
+    });
   }
 
   private params(filtros: Filtros): HttpParams {

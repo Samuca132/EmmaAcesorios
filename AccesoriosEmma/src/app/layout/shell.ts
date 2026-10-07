@@ -105,6 +105,10 @@ export class Shell {
       ],
     },
     {
+      titulo: 'Análisis',
+      items: [{ ruta: '/reportes', texto: 'Reportes', icono: 'summarize' }],
+    },
+    {
       titulo: 'Catálogos',
       items: [
         { ruta: '/productos', texto: 'Productos', icono: 'inventory_2' },

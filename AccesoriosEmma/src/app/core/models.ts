@@ -108,6 +108,34 @@ export interface Ticket {
   items?: TicketItem[];
 }
 
+export type TipoReporte = 'ventas' | 'compras' | 'canjes';
+export type TipoDato = 'texto' | 'fecha' | 'fechaHora' | 'entero' | 'moneda';
+
+export interface ColumnaReporte {
+  clave: string;
+  titulo: string;
+  tipo: TipoDato;
+  sumar?: boolean;
+}
+
+export interface TablaReporte {
+  titulo: string;
+  columnas: ColumnaReporte[];
+  filas: Record<string, string | number | null>[];
+}
+
+export interface Reporte extends TablaReporte {
+  tipo: TipoReporte;
+  filtros: string;
+  totales: { titulo: string; valor: number; tipo: TipoDato }[];
+  resumen: TablaReporte[];
+}
+
+export interface UsuarioResumen {
+  id: number;
+  nombre: string;
+}
+
 export interface Dashboard {
   ventasMes: number;
   ticketsMes: number;

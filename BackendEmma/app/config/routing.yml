@@ -66,3 +66,19 @@ ventas_ver:
     controller: AppBundle\Controller\VentaController::ver
     methods: [GET]
     requirements: { id: '\d+' }
+
+# ---------------- Reportes ----------------
+reportes_ver:
+    path: /api/reportes/{tipo}
+    controller: AppBundle\Controller\ReporteController::ver
+    methods: [GET]
+    requirements: { tipo: 'ventas|compras|canjes' }
+reportes_excel:
+    path: /api/reportes/{tipo}/excel
+    controller: AppBundle\Controller\ReporteController::excel
+    methods: [GET]
+    requirements: { tipo: 'ventas|compras|canjes' }
+usuarios_listar:
+    path: /api/usuarios
+    controller: AppBundle\Controller\ReporteController::usuarios
+    methods: [GET]

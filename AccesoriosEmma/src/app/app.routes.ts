@@ -19,6 +19,7 @@ export const routes: Routes = [
       { path: 'ventas', title: 'Ventas · Emma', loadComponent: () => import('./pages/ventas/ventas-page').then((m) => m.VentasPage) },
       { path: 'compras', title: 'Compras · Emma', loadComponent: () => import('./pages/compras/compras-page').then((m) => m.ComprasPage) },
       { path: 'canjes', title: 'Canjes · Emma', loadComponent: () => import('./pages/canjes/canjes-page').then((m) => m.CanjesPage) },
+      { path: 'reportes', title: 'Reportes · Emma', loadComponent: () => import('./pages/reportes/reportes-page').then((m) => m.ReportesPage) },
       { path: 'productos', title: 'Productos · Emma', loadComponent: () => import('./pages/productos/productos-page').then((m) => m.ProductosPage) },
       { path: 'insumos', title: 'Insumos · Emma', loadComponent: () => import('./pages/insumos/insumos-page').then((m) => m.InsumosPage) },
       { path: 'clientes', title: 'Clientes · Emma', loadComponent: () => import('./pages/clientes/clientes-page').then((m) => m.ClientesPage) },

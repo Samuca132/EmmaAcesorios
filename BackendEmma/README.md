@@ -18,7 +18,8 @@ API REST en JSON que usa el frontend Angular. Reemplaza al antiguo `index.php`.
 
 ## Requisitos
 
-- PHP 7.1 a 7.4 (versiones oficiales de Symfony 3.4 + Doctrine ORM 2.7) con `pdo_mysql`.
+- PHP 7.4 (versión oficial para Symfony 3.4 + Doctrine ORM 2.7) con las extensiones `pdo_mysql`,
+  `zip`, `gd`, `xml` y `mbstring` (las últimas las usa PhpSpreadsheet para los reportes en Excel).
   También funciona con PHP 8.x (probado en 8.3), aunque Doctrine ORM 2.7 no lo declara oficialmente.
 - MariaDB 10.4+ o MySQL 5.7+
 - [Composer](https://getcomposer.org/)
@@ -145,6 +146,9 @@ sean accesibles, y `SYMFONY_ENV=prod`.
 | GET | `/api/ventas` | Tickets. Filtros: `clienteId`, `productoId`, `ciudadId`, `desde`, `hasta` (YYYY-MM-DD) |
 | POST | `/api/ventas` | `{clienteId, items: [{productoId, cantidad}]}` |
 | GET | `/api/ventas/{id}` | Ticket con sus renglones |
+| GET | `/api/reportes/{ventas\|compras\|canjes}` | Reporte en JSON. Filtros: `desde`, `hasta`, `usuarioId` y según el tipo `clienteId`, `productoId`, `ciudadId`, `proveedorId`, `insumoId` |
+| GET | `/api/reportes/{tipo}/excel` | El mismo reporte como archivo `.xlsx` |
+| GET | `/api/usuarios` | Lista de usuarios (para filtrar reportes) |
 
 Ventas, compras y canjes aceptan varios renglones por operación y se guardan en una sola transacción
 (si un renglón falla no se guarda ninguno). Cada operación registra el usuario que la hizo
