@@ -2,83 +2,49 @@
 
 namespace AppBundle\Repository;
 
-use Doctrine\DBAL\Connection;
+use AppBundle\Entity\Insumo;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\DBAL\LockMode;
 
-class InsumoRepository
+class InsumoRepository extends ServiceEntityRepository
 {
-    private $db;
-
-    public function __construct(Connection $db)
+    public function __construct(ManagerRegistry $registry)
     {
-        $this->db = $db;
+        parent::__construct($registry, Insumo::class);
     }
 
+    /**
+     * @return Insumo[]
+     */
     public function listar($busqueda = null)
     {
-        $sql = 'SELECT IDInsumo, NombreInsumo, Stock, precio, DescuentoPactadoCanje FROM insumo WHERE visibility = 1';
-        $params = [];
+        $qb = $this->createQueryBuilder('i')
+            ->where('i.visible = true')
+            ->orderBy('i.nombre');
+
         if ($busqueda) {
-            $sql .= ' AND NombreInsumo LIKE ?';
-            $params[] = '%'.$busqueda.'%';
+            $qb->andWhere('i.nombre LIKE :q')->setParameter('q', '%'.$busqueda.'%');
         }
-        $sql .= ' ORDER BY NombreInsumo';
 
-        return array_map([$this, 'mapear'], $this->db->fetchAll($sql, $params));
+        return $qb->getQuery()->getResult();
     }
 
-    public function buscar($id)
+    /**
+     * @return Insumo|null
+     */
+    public function buscarVisible($id)
     {
-        $fila = $this->db->fetchAssoc(
-            'SELECT IDInsumo, NombreInsumo, Stock, precio, DescuentoPactadoCanje FROM insumo WHERE IDInsumo = ? AND visibility = 1',
-            [(int) $id]
-        );
-
-        return $fila ? $this->mapear($fila) : null;
+        return $this->findOneBy(['id' => (int) $id, 'visible' => true]);
     }
 
-    public function crear(array $d)
+    /**
+     * @return Insumo|null
+     */
+    public function buscarParaActualizarStock($id)
     {
-        $this->db->insert('insumo', $this->columnas($d) + ['visibility' => 1]);
+        $insumo = $this->getEntityManager()->find(Insumo::class, (int) $id, LockMode::PESSIMISTIC_WRITE);
 
-        return $this->buscar($this->db->lastInsertId());
-    }
-
-    public function actualizar($id, array $d)
-    {
-        $this->db->update('insumo', $this->columnas($d), ['IDInsumo' => (int) $id]);
-
-        return $this->buscar($id);
-    }
-
-    public function borrar($id)
-    {
-        return $this->db->update('insumo', ['visibility' => 0], ['IDInsumo' => (int) $id]) > 0;
-    }
-
-    public function sumarStock($id, $cantidad)
-    {
-        $this->db->executeUpdate('UPDATE insumo SET Stock = Stock + ? WHERE IDInsumo = ?', [(int) $cantidad, (int) $id]);
-    }
-
-
-    private function columnas(array $d)
-    {
-        return [
-            'NombreInsumo' => trim($d['nombre']),
-            'Stock' => (int) $d['stock'],
-            'precio' => $d['precio'],
-            'DescuentoPactadoCanje' => isset($d['descuentoCanje']) ? (int) $d['descuentoCanje'] : 0,
-        ];
-    }
-
-    private function mapear(array $f)
-    {
-        return [
-            'id' => (int) $f['IDInsumo'],
-            'nombre' => $f['NombreInsumo'],
-            'stock' => (int) $f['Stock'],
-            'precio' => (float) $f['precio'],
-            'descuentoCanje' => (int) $f['DescuentoPactadoCanje'],
-        ];
+        return $insumo && $insumo->isVisible() ? $insumo : null;
     }
 }

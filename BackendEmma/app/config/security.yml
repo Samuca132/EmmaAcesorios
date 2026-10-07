@@ -1,12 +1,12 @@
 security:
     encoders:
-        AppBundle\Security\Usuario:
+        AppBundle\Entity\Usuario:
             algorithm: bcrypt
             cost: 12
 
     providers:
         usuarios:
-            id: AppBundle\Security\UsuarioProvider
+            entity: { class: AppBundle\Entity\Usuario, property: email }
 
     firewalls:
         login:

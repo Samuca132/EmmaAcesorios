@@ -2,7 +2,9 @@
 
 namespace AppBundle\Controller;
 
+use AppBundle\Entity\Producto;
 use AppBundle\Repository\ProductoRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -11,66 +13,69 @@ class ProductoController extends ApiController
 {
     private $productos;
 
-    public function __construct(ValidatorInterface $validator, ProductoRepository $productos)
+    public function __construct(ValidatorInterface $validator, EntityManagerInterface $em, ProductoRepository $productos)
     {
-        parent::__construct($validator);
+        parent::__construct($validator, $em);
         $this->productos = $productos;
     }
 
     public function listar(Request $request)
     {
-        return new JsonResponse($this->productos->listar($request->query->get('q')));
+        return new JsonResponse(array_map(function (Producto $p) {
+            return $p->toArray();
+        }, $this->productos->listar($request->query->get('q'))));
     }
 
     public function ver($id)
     {
-        $producto = $this->productos->buscar($id);
-        if (!$producto) {
-            throw $this->noEncontrado('Producto');
-        }
-
-        return new JsonResponse($producto);
+        return new JsonResponse($this->buscar($id)->toArray());
     }
 
     public function crear(Request $request)
     {
-        $data = $this->getJson($request);
-        if ($errores = $this->validar($data, $this->reglas())) {
-            return $errores;
-        }
-
-        return new JsonResponse($this->productos->crear($data), 201);
+        return $this->guardar(new Producto(), $this->getJson($request), 201);
     }
 
     public function editar(Request $request, $id)
     {
-        if (!$this->productos->buscar($id)) {
-            throw $this->noEncontrado('Producto');
-        }
-        $data = $this->getJson($request);
-        if ($errores = $this->validar($data, $this->reglas())) {
-            return $errores;
-        }
-
-        return new JsonResponse($this->productos->actualizar($id, $data));
+        return $this->guardar($this->buscar($id), $this->getJson($request), 200);
     }
 
     public function borrar($id)
     {
-        if (!$this->productos->borrar($id)) {
-            throw $this->noEncontrado('Producto');
-        }
+        $this->buscar($id)->darDeBaja();
+        $this->em->flush();
 
         return new JsonResponse(null, 204);
     }
 
-    private function reglas()
+    private function guardar(Producto $producto, array $data, $status)
     {
-        return [
-            'nombre' => self::texto(50),
-            'stock' => self::entero(),
-            'precio' => self::numero(),
-            'coste' => self::numero(),
-        ];
+        $producto
+            ->setNombre(self::valor($data, 'nombre'))
+            ->setStock(self::valor($data, 'stock'))
+            ->setPrecio(self::valor($data, 'precio'))
+            ->setCoste(self::valor($data, 'coste'));
+
+        if ($errores = $this->validarEntidad($producto)) {
+            $this->em->clear();
+
+            return $errores;
+        }
+
+        $this->em->persist($producto);
+        $this->em->flush();
+
+        return new JsonResponse($producto->toArray(), $status);
+    }
+
+    private function buscar($id)
+    {
+        $producto = $this->productos->buscarVisible($id);
+        if (!$producto) {
+            throw $this->noEncontrado('Producto');
+        }
+
+        return $producto;
     }
 }

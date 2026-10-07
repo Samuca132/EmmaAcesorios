@@ -6,27 +6,28 @@ API REST en JSON que usa el frontend Angular. Reemplaza al antiguo `index.php`.
 
 | Antes | Ahora |
 |---|---|
-| Un único `index.php` con SQL armado concatenando strings (inyección SQL) | Symfony 3.4 + Doctrine DBAL con **consultas preparadas** |
+| Un único `index.php` con SQL armado concatenando strings (inyección SQL) | Symfony 3.4 + **Doctrine ORM** (entidades, repositorios y DQL con parámetros) |
 | Contraseñas guardadas en texto plano | Hash **bcrypt** (cost 12) |
 | "JWT" firmado con una clave aleatoria distinta en cada login (no se podía verificar) | JWT HS256 firmado con `JWT_SECRET`, con vencimiento (8 h) y validado en cada petición |
 | La API no exigía estar logueado | Todas las rutas `/api/*` (salvo `/api/login`) requieren `Authorization: Bearer <token>` |
 | Sin protección contra fuerza bruta | Bloqueo de cuenta 15 min tras 5 intentos fallidos + límite de 20 intentos por IP |
 | CORS abierto a cualquier sitio (`*`) | Solo los orígenes de `CORS_ALLOW_ORIGIN` |
 | Credenciales de la base en el código | Variables de entorno (`.env`) |
-| Stock descontado aunque la venta fallara | Ventas, compras y canjes en **transacciones**; no se vende sin stock |
+| Stock descontado aunque la venta fallara | Ventas, compras y canjes en **transacciones** con bloqueo de fila (`SELECT … FOR UPDATE`); no se vende sin stock |
 | Precios tomados del navegador | Precios y ganancias calculados en el servidor |
 
 ## Requisitos
 
-- PHP 7.1 a 8.3 con `pdo_mysql` (probado con PHP 8.3)
+- PHP 7.1 a 7.4 (versiones oficiales de Symfony 3.4 + Doctrine ORM 2.7) con `pdo_mysql`.
+  También funciona con PHP 8.x (probado en 8.3), aunque Doctrine ORM 2.7 no lo declara oficialmente.
 - MariaDB 10.4+ o MySQL 5.7+
 - [Composer](https://getcomposer.org/)
 
 > ⚠️ **Symfony 3.4 ya no recibe parches de seguridad** (fin de soporte: noviembre 2021) y
 > `composer audit` informa vulnerabilidades conocidas. La mayoría afecta componentes que esta API no
 > usa (Twig, Mailer, X509), y para la que sí aplica (CVE-2025-64500) hay una mitigación en
-> `PathInfoSubscriber`. Aun así, para producción conviene migrar a Symfony 6.4/7.x LTS: los
-> controladores y repositorios están escritos de forma que el paso sea directo.
+> `PathInfoSubscriber`. Para producción conviene migrar a Symfony 6.4/7.x LTS: entidades,
+> repositorios y controladores se pueden llevar casi sin cambios.
 
 ## Instalación
 
@@ -44,14 +45,47 @@ La conexión a MySQL se configura en `app/config/parameters.yml` (copiado del ar
 
 ### Base de datos
 
-- **Instalación nueva:** ejecutar `sql/schema.sql`.
-- **Base existente (versión anterior):** hacer backup y ejecutar **una sola vez** `sql/migracion_v1_a_v2.sql`.
-  Las contraseñas viejas (en texto plano) se invalidan: regenerarlas con
-  `php bin/console app:usuario:password email@dominio.com`.
+El esquema se define en las entidades de `src/AppBundle/Entity` (anotaciones de Doctrine).
 
-> No ejecutes `doctrine:schema:update`: el esquema se maneja con los archivos de `sql/`.
+**Instalación nueva**
 
-Se recomienda que la aplicación use un usuario de MySQL propio con permisos mínimos:
+```bash
+php bin/console doctrine:database:create
+php bin/console doctrine:schema:create
+php bin/console doctrine:schema:validate      # debe decir que todo está en sync
+```
+
+(`sql/schema.sql` es el mismo esquema exportado con `doctrine:schema:create --dump-sql`, por si
+preferís importarlo desde phpMyAdmin.)
+
+**Base existente de la versión anterior**
+
+```bash
+mysqldump -u root emmaaccesorios > backup_emmaaccesorios.sql     # 1. backup
+mysql -u root emmaaccesorios < sql/migracion_v1_a_v2.sql         # 2. datos (una sola vez)
+php bin/console doctrine:schema:update --dump-sql                # 3. revisar lo que falta
+php bin/console doctrine:schema:update --force                   #    y aplicarlo
+php bin/console doctrine:schema:validate                         # 4. verificar
+```
+
+El script SQL convierte tipos y datos que Doctrine no puede migrar sin perder información (IDs
+guardados como texto, ventas sin ticket, contraseñas en texto plano). `schema:update` agrega las
+claves foráneas e índices y **borra las columnas de imágenes**, que ya no se usan.
+Si al agregar las claves foráneas falla por datos huérfanos (por ejemplo ventas de un producto que
+ya no existe), buscalos con:
+
+```sql
+SELECT * FROM venta v LEFT JOIN producto p ON p.IDProducto = v.IDProducto WHERE p.IDProducto IS NULL;
+```
+
+**Cambios futuros en las entidades:** modificá la entidad y corré
+`doctrine:schema:update --dump-sql` / `--force` (siempre revisando el SQL antes, con backup).
+
+Las contraseñas viejas quedan invalidadas: generá nuevas con
+`php bin/console app:usuario:password email@dominio.com`.
+
+En producción conviene que la aplicación use un usuario de MySQL con permisos mínimos (los comandos
+`doctrine:*` de arriba se corren con un usuario administrador):
 
 ```sql
 CREATE USER 'emma_app'@'localhost' IDENTIFIED BY 'una-clave-larga-y-aleatoria';
@@ -75,15 +109,17 @@ Si preferís hacerlo por SQL, ver `sql/crear_usuario.sql`.
 
 ### Levantar el servidor
 
-Desarrollo (sin Apache):
+Desarrollo:
 
 ```bash
-SYMFONY_ENV=dev php -S localhost:8000 -t web web/app.php
+php bin/console server:run            # en primer plano, http://127.0.0.1:8000
+php bin/console server:start          # en segundo plano (Linux/macOS); server:stop para frenarlo
 ```
 
 Con XAMPP: copiar `BackendEmma` dentro de `htdocs`; la API queda en
 `http://localhost/BackendEmma/web/api` (el `.htaccess` de `web/` ya está preparado, hace falta `mod_rewrite`).
-En producción el *DocumentRoot* debería apuntar a `web/` para que `.env`, `app/` y `vendor/` no sean accesibles.
+En producción el *DocumentRoot* debería apuntar a `web/` para que `.env`, `app/` y `vendor/` no
+sean accesibles, y `SYMFONY_ENV=prod`.
 
 ## Endpoints
 
@@ -117,11 +153,12 @@ Errores: siempre JSON `{message}`; las validaciones devuelven 422 con `{message,
 ```
 app/config/         configuración (seguridad, rutas, servicios)
 src/AppBundle/
+  Entity/           entidades Doctrine (definen el esquema de la base)
   Controller/       un controlador por recurso
-  Repository/       todas las consultas SQL (preparadas)
+  Repository/       repositorios Doctrine (consultas DQL / QueryBuilder)
   Security/         usuario, JWT, autenticador y límite de intentos
   EventSubscriber/  CORS, errores JSON, mitigaciones
   Command/          comandos de consola para gestionar usuarios
-sql/                esquema, migración y query de alta de usuario
+sql/                esquema exportado, migración desde v1 y query de alta de usuario
 web/app.php         punto de entrada
 ```

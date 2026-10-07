@@ -2,22 +2,34 @@
 
 namespace AppBundle\Controller;
 
-use AppBundle\Repository\DashboardRepository;
+use AppBundle\Entity\Producto;
+use AppBundle\Repository\ClienteRepository;
+use AppBundle\Repository\CompraRepository;
+use AppBundle\Repository\ProductoRepository;
+use AppBundle\Repository\TicketRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class DashboardController extends ApiController
 {
-    private $dashboard;
+    public function resumen(
+        TicketRepository $tickets,
+        CompraRepository $compras,
+        ClienteRepository $clientes,
+        ProductoRepository $productos
+    ) {
+        $inicioMes = new \DateTime('first day of this month 00:00:00');
+        $ventas = $tickets->resumenDesde($inicioMes);
 
-    public function __construct(ValidatorInterface $validator, DashboardRepository $dashboard)
-    {
-        parent::__construct($validator);
-        $this->dashboard = $dashboard;
-    }
-
-    public function resumen()
-    {
-        return new JsonResponse($this->dashboard->resumen());
+        return new JsonResponse([
+            'ventasMes' => $ventas['total'],
+            'ticketsMes' => $ventas['cantidad'],
+            'gananciaMes' => $ventas['ganancia'],
+            'comprasMes' => $compras->totalDesde($inicioMes),
+            'clientes' => $clientes->contarVisibles(),
+            'productos' => $productos->contarVisibles(),
+            'stockBajo' => array_map(function (Producto $p) {
+                return ['id' => $p->getId(), 'nombre' => $p->getNombre(), 'stock' => $p->getStock()];
+            }, $productos->conStockBajo()),
+        ]);
     }
 }

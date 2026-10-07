@@ -3,6 +3,7 @@
 namespace AppBundle\Command;
 
 use AppBundle\Repository\UsuarioRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -18,12 +19,14 @@ class CambiarPasswordCommand extends Command
 {
     protected static $defaultName = 'app:usuario:password';
 
+    private $em;
     private $usuarios;
     private $encoder;
 
-    public function __construct(UsuarioRepository $usuarios, UserPasswordEncoderInterface $encoder)
+    public function __construct(EntityManagerInterface $em, UsuarioRepository $usuarios, UserPasswordEncoderInterface $encoder)
     {
         parent::__construct();
+        $this->em = $em;
         $this->usuarios = $usuarios;
         $this->encoder = $encoder;
     }
@@ -47,7 +50,9 @@ class CambiarPasswordCommand extends Command
         }
 
         $password = $input->getOption('preguntar') ? Passwords::preguntar($io) : Passwords::generar();
-        $this->usuarios->cambiarPassword($usuario->getId(), $this->encoder->encodePassword($usuario, $password));
+        // setPassword() también desbloquea la cuenta
+        $usuario->setPassword($this->encoder->encodePassword($usuario, $password));
+        $this->em->flush();
 
         $io->success('Contraseña actualizada para '.$usuario->getEmail());
         if (!$input->getOption('preguntar')) {

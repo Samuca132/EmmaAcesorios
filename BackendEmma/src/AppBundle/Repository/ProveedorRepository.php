@@ -2,85 +2,44 @@
 
 namespace AppBundle\Repository;
 
-use Doctrine\DBAL\Connection;
+use AppBundle\Entity\Canje;
+use AppBundle\Entity\Compra;
+use AppBundle\Entity\Proveedor;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Common\Persistence\ManagerRegistry;
 
-class ProveedorRepository
+class ProveedorRepository extends ServiceEntityRepository
 {
-    const SELECT = 'SELECT p.IDProveedor, p.nombre, p.IDCiudad, p.TelefonoProveedor, ci.NombreCiudad
-                      FROM proveedores p
-                      LEFT JOIN ciudad ci ON ci.IDCiudad = p.IDCiudad';
-
-    private $db;
-
-    public function __construct(Connection $db)
+    public function __construct(ManagerRegistry $registry)
     {
-        $this->db = $db;
+        parent::__construct($registry, Proveedor::class);
     }
 
+    /**
+     * @return Proveedor[]
+     */
     public function listar($busqueda = null)
     {
-        $sql = self::SELECT;
-        $params = [];
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('ci')
+            ->leftJoin('p.ciudad', 'ci')
+            ->orderBy('p.nombre');
+
         if ($busqueda) {
-            $sql .= ' WHERE p.nombre LIKE ?';
-            $params[] = '%'.$busqueda.'%';
+            $qb->where('p.nombre LIKE :q')->setParameter('q', '%'.$busqueda.'%');
         }
-        $sql .= ' ORDER BY p.nombre';
 
-        return array_map([$this, 'mapear'], $this->db->fetchAll($sql, $params));
+        return $qb->getQuery()->getResult();
     }
 
-    public function buscar($id)
+    public function enUso(Proveedor $proveedor)
     {
-        $fila = $this->db->fetchAssoc(self::SELECT.' WHERE p.IDProveedor = ?', [(int) $id]);
+        $em = $this->getEntityManager();
+        $compras = $em->createQuery(sprintf('SELECT COUNT(c.id) FROM %s c WHERE c.proveedor = :p', Compra::class))
+            ->setParameter('p', $proveedor)->getSingleScalarResult();
+        $canjes = $em->createQuery(sprintf('SELECT COUNT(c.id) FROM %s c WHERE c.proveedor = :p', Canje::class))
+            ->setParameter('p', $proveedor)->getSingleScalarResult();
 
-        return $fila ? $this->mapear($fila) : null;
-    }
-
-    public function crear(array $d)
-    {
-        $this->db->insert('proveedores', $this->columnas($d));
-
-        return $this->buscar($this->db->lastInsertId());
-    }
-
-    public function actualizar($id, array $d)
-    {
-        $this->db->update('proveedores', $this->columnas($d), ['IDProveedor' => (int) $id]);
-
-        return $this->buscar($id);
-    }
-
-    public function enUso($id)
-    {
-        return (bool) $this->db->fetchColumn(
-            'SELECT (SELECT COUNT(*) FROM compras WHERE IDProveedor = :id) + (SELECT COUNT(*) FROM canjes WHERE IDProveedor = :id)',
-            ['id' => (int) $id]
-        );
-    }
-
-    public function borrar($id)
-    {
-        return $this->db->delete('proveedores', ['IDProveedor' => (int) $id]) > 0;
-    }
-
-    private function columnas(array $d)
-    {
-        return [
-            'nombre' => trim($d['nombre']),
-            'IDCiudad' => isset($d['ciudadId']) ? (int) $d['ciudadId'] : null,
-            'TelefonoProveedor' => isset($d['telefono']) ? trim($d['telefono']) : '',
-        ];
-    }
-
-    private function mapear(array $f)
-    {
-        return [
-            'id' => (int) $f['IDProveedor'],
-            'nombre' => $f['nombre'],
-            'ciudadId' => $f['IDCiudad'] !== null ? (int) $f['IDCiudad'] : null,
-            'ciudad' => $f['NombreCiudad'],
-            'telefono' => $f['TelefonoProveedor'],
-        ];
+        return ($compras + $canjes) > 0;
     }
 }

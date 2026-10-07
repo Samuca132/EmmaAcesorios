@@ -2,6 +2,7 @@
 
 namespace AppBundle\Security;
 
+use AppBundle\Entity\Usuario;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 

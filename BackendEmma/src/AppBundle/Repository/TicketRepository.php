@@ -2,162 +2,83 @@
 
 namespace AppBundle\Repository;
 
-use Doctrine\DBAL\Connection;
+use AppBundle\Entity\Ticket;
+use AppBundle\Entity\Venta;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Common\Persistence\ManagerRegistry;
 
-class TicketRepository
+class TicketRepository extends ServiceEntityRepository
 {
-    const SELECT = 'SELECT t.IDTicket, t.IDCliente, t.Fecha, t.CProductos, t.Valor, cl.nombreCliente, ci.NombreCiudad
-                      FROM ticket t
-                      LEFT JOIN cliente cl ON cl.IDCliente = t.IDCliente
-                      LEFT JOIN ciudad ci ON ci.IDCiudad = cl.IDCiudad';
-
-    private $db;
-
-    public function __construct(Connection $db)
+    public function __construct(ManagerRegistry $registry)
     {
-        $this->db = $db;
-    }
-
-    public function listar(array $filtros = [])
-    {
-        $where = [];
-        $params = [];
-        if (!empty($filtros['clienteId'])) {
-            $where[] = 't.IDCliente = ?';
-            $params[] = (int) $filtros['clienteId'];
-        }
-        if (!empty($filtros['ciudadId'])) {
-            $where[] = 'cl.IDCiudad = ?';
-            $params[] = (int) $filtros['ciudadId'];
-        }
-        if (!empty($filtros['productoId'])) {
-            $where[] = 'EXISTS (SELECT 1 FROM venta v WHERE v.IDTicket = t.IDTicket AND v.IDProducto = ?)';
-            $params[] = (int) $filtros['productoId'];
-        }
-        if (!empty($filtros['desde'])) {
-            $where[] = 't.Fecha >= ?';
-            $params[] = $filtros['desde'].' 00:00:00';
-        }
-        if (!empty($filtros['hasta'])) {
-            $where[] = 't.Fecha <= ?';
-            $params[] = $filtros['hasta'].' 23:59:59';
-        }
-
-        $sql = self::SELECT.($where ? ' WHERE '.implode(' AND ', $where) : '').' ORDER BY t.Fecha DESC, t.IDTicket DESC';
-
-        return array_map([$this, 'mapear'], $this->db->fetchAll($sql, $params));
-    }
-
-    public function buscar($id)
-    {
-        $fila = $this->db->fetchAssoc(self::SELECT.' WHERE t.IDTicket = ?', [(int) $id]);
-        if (!$fila) {
-            return null;
-        }
-
-        $ticket = $this->mapear($fila);
-        $ticket['items'] = array_map(function ($f) {
-            return [
-                'productoId' => (int) $f['IDProducto'],
-                'producto' => $f['NombreProducto'],
-                'cantidad' => (int) $f['CantidadProducto'],
-                'precioUnitario' => (float) $f['PrecioUnitario'],
-                'total' => (float) $f['Total'],
-            ];
-        }, $this->db->fetchAll(
-            'SELECT v.IDProducto, p.NombreProducto, v.CantidadProducto, v.PrecioUnitario, v.Total
-               FROM venta v LEFT JOIN producto p ON p.IDProducto = v.IDProducto
-              WHERE v.IDTicket = ? ORDER BY v.IDVenta',
-            [(int) $id]
-        ));
-
-        return $ticket;
+        parent::__construct($registry, Ticket::class);
     }
 
     /**
-     * Crea el ticket con todos sus renglones. Los precios se toman de la base
-     * de datos (nunca del cliente) y el stock se descuenta en la misma
-     * transacción: si algún producto no alcanza, no se guarda nada.
-     *
-     * @param array $items [['productoId' => int, 'cantidad' => int], ...]
-     *
-     * @throws \DomainException
+     * @return Ticket[]
      */
-    public function crear($clienteId, array $items)
+    public function listar(array $filtros = [])
     {
-        // Agrupa renglones repetidos del mismo producto
-        $cantidades = [];
-        foreach ($items as $item) {
-            $pid = (int) $item['productoId'];
-            $cantidades[$pid] = (isset($cantidades[$pid]) ? $cantidades[$pid] : 0) + (int) $item['cantidad'];
+        $qb = $this->createQueryBuilder('t')
+            ->addSelect('c', 'ci')
+            ->join('t.cliente', 'c')
+            ->leftJoin('c.ciudad', 'ci')
+            ->orderBy('t.fecha', 'DESC')->addOrderBy('t.id', 'DESC');
+
+        if (!empty($filtros['clienteId'])) {
+            $qb->andWhere('c.id = :cliente')->setParameter('cliente', (int) $filtros['clienteId']);
+        }
+        if (!empty($filtros['ciudadId'])) {
+            $qb->andWhere('ci.id = :ciudad')->setParameter('ciudad', (int) $filtros['ciudadId']);
+        }
+        if (!empty($filtros['productoId'])) {
+            $qb->andWhere(sprintf('EXISTS (SELECT v.id FROM %s v WHERE v.ticket = t AND IDENTITY(v.producto) = :producto)', Venta::class))
+                ->setParameter('producto', (int) $filtros['productoId']);
+        }
+        if (!empty($filtros['desde'])) {
+            $qb->andWhere('t.fecha >= :desde')->setParameter('desde', new \DateTime($filtros['desde'].' 00:00:00'));
+        }
+        if (!empty($filtros['hasta'])) {
+            $qb->andWhere('t.fecha <= :hasta')->setParameter('hasta', new \DateTime($filtros['hasta'].' 23:59:59'));
         }
 
-        $id = $this->db->transactional(function (Connection $db) use ($clienteId, $cantidades) {
-            $ahora = date('Y-m-d H:i:s');
-            $db->insert('ticket', [
-                'IDCliente' => (int) $clienteId,
-                'Fecha' => $ahora,
-                'CProductos' => array_sum($cantidades),
-                'Valor' => 0,
-            ]);
-            $ticketId = $db->lastInsertId();
-            $total = 0;
-
-            foreach ($cantidades as $productoId => $cantidad) {
-                $producto = $db->fetchAssoc(
-                    'SELECT NombreProducto, PrecioProducto, costeProduccion, stockProducto FROM producto WHERE IDProducto = ? AND visibility = 1',
-                    [$productoId]
-                );
-                if (!$producto) {
-                    throw new \DomainException('El producto #'.$productoId.' no existe.');
-                }
-
-                $ok = $db->executeUpdate(
-                    'UPDATE producto SET stockProducto = stockProducto - ? WHERE IDProducto = ? AND stockProducto >= ?',
-                    [$cantidad, $productoId, $cantidad]
-                );
-                if (!$ok) {
-                    throw new \DomainException(sprintf(
-                        'No hay stock suficiente de "%s" (disponible: %d).',
-                        $producto['NombreProducto'],
-                        $producto['stockProducto']
-                    ));
-                }
-
-                $precio = (float) $producto['PrecioProducto'];
-                $subtotal = round($precio * $cantidad, 2);
-                $total += $subtotal;
-
-                $db->insert('venta', [
-                    'IDTicket' => $ticketId,
-                    'IDCliente' => (int) $clienteId,
-                    'IDProducto' => $productoId,
-                    'CantidadProducto' => $cantidad,
-                    'PrecioUnitario' => $precio,
-                    'profit' => round(($precio - (float) $producto['costeProduccion']) * $cantidad, 2),
-                    'fechaVenta' => substr($ahora, 0, 10),
-                    'Total' => $subtotal,
-                ]);
-            }
-
-            $db->update('ticket', ['Valor' => round($total, 2)], ['IDTicket' => $ticketId]);
-
-            return $ticketId;
-        });
-
-        return $this->buscar($id);
+        return $qb->getQuery()->getResult();
     }
 
-    private function mapear(array $f)
+    /**
+     * @return Ticket|null
+     */
+    public function buscarConItems($id)
     {
+        return $this->createQueryBuilder('t')
+            ->addSelect('c', 'ci', 'v', 'p')
+            ->join('t.cliente', 'c')
+            ->leftJoin('c.ciudad', 'ci')
+            ->leftJoin('t.items', 'v')
+            ->leftJoin('v.producto', 'p')
+            ->where('t.id = :id')->setParameter('id', (int) $id)
+            ->getQuery()->getOneOrNullResult();
+    }
+
+    /**
+     * @return array ['cantidad' => int, 'total' => float, 'ganancia' => float]
+     */
+    public function resumenDesde(\DateTime $desde)
+    {
+        $tickets = $this->createQueryBuilder('t')
+            ->select('COUNT(t.id) AS cantidad, COALESCE(SUM(t.total), 0) AS total')
+            ->where('t.fecha >= :desde')->setParameter('desde', $desde)
+            ->getQuery()->getSingleResult();
+
+        $ganancia = $this->getEntityManager()
+            ->createQuery(sprintf('SELECT COALESCE(SUM(v.profit), 0) FROM %s v WHERE v.fecha >= :desde', Venta::class))
+            ->setParameter('desde', $desde)
+            ->getSingleScalarResult();
+
         return [
-            'id' => (int) $f['IDTicket'],
-            'fecha' => $f['Fecha'],
-            'clienteId' => (int) $f['IDCliente'],
-            'cliente' => $f['nombreCliente'],
-            'ciudad' => $f['NombreCiudad'],
-            'cantidadProductos' => (int) $f['CProductos'],
-            'total' => (float) $f['Valor'],
+            'cantidad' => (int) $tickets['cantidad'],
+            'total' => (float) $tickets['total'],
+            'ganancia' => (float) $ganancia,
         ];
     }
 }

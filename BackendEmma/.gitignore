@@ -2,4 +2,4 @@
 /var/*
 !/var/.gitkeep
 /.env
-/app/config/parameters.yml
+/.web-server-pid

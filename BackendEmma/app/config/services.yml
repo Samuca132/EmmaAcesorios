@@ -10,7 +10,7 @@ services:
 
     AppBundle\:
         resource: '../../src/AppBundle/*'
-        exclude: '../../src/AppBundle/{AppBundle.php,Security/Usuario.php,Command/Passwords.php}'
+        exclude: '../../src/AppBundle/{AppBundle.php,Entity,Command/Passwords.php}'
 
     AppBundle\Controller\:
         resource: '../../src/AppBundle/Controller'
