@@ -11,6 +11,7 @@ use AppBundle\Entity\Producto;
 use AppBundle\Entity\Proveedor;
 use AppBundle\Entity\Usuario;
 use AppBundle\Entity\Venta;
+use AppBundle\Repository\IncluyeBorrados;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 
@@ -48,6 +49,14 @@ class Reportes
      * @param array  $filtros valores ya validados (ids enteros, fechas \DateTime)
      */
     public function generar($tipo, array $filtros)
+    {
+        // Los reportes son históricos: incluyen clientes, productos, etc. ya borrados
+        return IncluyeBorrados::ejecutar($this->em, function () use ($tipo, $filtros) {
+            return $this->generarSinFiltro($tipo, $filtros);
+        });
+    }
+
+    private function generarSinFiltro($tipo, array $filtros)
     {
         switch ($tipo) {
             case 'ventas':

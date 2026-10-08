@@ -20,7 +20,6 @@ class InsumoRepository extends ServiceEntityRepository
     public function listar($busqueda = null)
     {
         $qb = $this->createQueryBuilder('i')
-            ->where('i.visible = true')
             ->orderBy('i.nombre');
 
         if ($busqueda) {
@@ -33,9 +32,9 @@ class InsumoRepository extends ServiceEntityRepository
     /**
      * @return Insumo|null
      */
-    public function buscarVisible($id)
+    public function buscar($id)
     {
-        return $this->findOneBy(['id' => (int) $id, 'visible' => true]);
+        return $this->find((int) $id);
     }
 
     /**
@@ -43,8 +42,6 @@ class InsumoRepository extends ServiceEntityRepository
      */
     public function buscarParaActualizarStock($id)
     {
-        $insumo = $this->getEntityManager()->find(Insumo::class, (int) $id, LockMode::PESSIMISTIC_WRITE);
-
-        return $insumo && $insumo->isVisible() ? $insumo : null;
+        return $this->getEntityManager()->find(Insumo::class, (int) $id, LockMode::PESSIMISTIC_WRITE);
     }
 }

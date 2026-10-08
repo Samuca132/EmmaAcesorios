@@ -59,19 +59,33 @@ php bin/console doctrine:schema:validate      # debe decir que todo está en syn
 (`sql/schema.sql` es el mismo esquema exportado con `doctrine:schema:create --dump-sql`, por si
 preferís importarlo desde phpMyAdmin.)
 
-**Base existente de la versión anterior**
+**Base existente**
+
+Los scripts se corren en orden y **una sola vez** cada uno, según desde qué versión venís:
+
+| Tu base está en… | Correr |
+|---|---|
+| v1 (el `index.php` original) | `migracion_v1_a_v2.sql` y después `migracion_v2_a_v3.sql` |
+| v2 (Symfony, antes de timestamps/soft delete) | `migracion_v2_a_v3.sql` |
 
 ```bash
 mysqldump -u root emmaaccesorios > backup_emmaaccesorios.sql     # 1. backup
-mysql -u root emmaaccesorios < sql/migracion_v1_a_v2.sql         # 2. datos (una sola vez)
+mysql -u root emmaaccesorios < sql/migracion_v1_a_v2.sql         # 2a. solo si venís de v1
+mysql -u root emmaaccesorios < sql/migracion_v2_a_v3.sql         # 2b. timestamps y soft delete
 php bin/console doctrine:schema:update --dump-sql                # 3. revisar lo que falta
 php bin/console doctrine:schema:update --force                   #    y aplicarlo
 php bin/console doctrine:schema:validate                         # 4. verificar
 ```
 
-El script SQL convierte tipos y datos que Doctrine no puede migrar sin perder información (IDs
-guardados como texto, ventas sin ticket, contraseñas en texto plano). `schema:update` agrega las
-claves foráneas e índices y **borra las columnas de imágenes**, que ya no se usan.
+Los scripts SQL convierten tipos y datos que Doctrine no puede migrar sin perder información (IDs
+guardados como texto, ventas sin ticket, contraseñas en texto plano, registros ocultos con
+`visibility = 0` que pasan a `deleted_at`). `schema:update` agrega las claves foráneas e índices y
+**borra las columnas que ya no se usan** (imágenes y `visibility`).
+
+**Borrados:** todas las entidades tienen `created_at`, `updated_at` y `deleted_at` (Gedmo
+Timestampable / SoftDeleteable). Borrar desde la aplicación o la API solo completa `deleted_at`: el
+registro deja de aparecer pero sigue en la base y en el historial. Para recuperarlo:
+`UPDATE tabla SET deleted_at = NULL WHERE ...`.
 Si al agregar las claves foráneas falla por datos huérfanos (por ejemplo ventas de un producto que
 ya no existe), buscalos con:
 
@@ -131,7 +145,7 @@ sean accesibles, y `SYMFONY_ENV=prod`.
 | POST | `/api/me/password` | `{actual, nueva}` |
 | GET | `/api/dashboard` | Resumen del mes |
 | GET/POST | `/api/productos` | Listar (`?q=`) / crear `{nombre, stock, precio, coste}` |
-| GET/PUT/DELETE | `/api/productos/{id}` | Ver / editar / baja lógica |
+| GET/PUT/DELETE | `/api/productos/{id}` | Ver / editar / borrar (soft delete) |
 | GET/POST | `/api/insumos` | `{nombre, stock, precio, descuentoCanje}` |
 | GET/PUT/DELETE | `/api/insumos/{id}` | |
 | GET/POST | `/api/clientes` | `{nombre, ciudadId, telefono}` |
@@ -149,6 +163,11 @@ sean accesibles, y `SYMFONY_ENV=prod`.
 | GET | `/api/reportes/{ventas\|compras\|canjes}` | Reporte en JSON. Filtros: `desde`, `hasta`, `usuarioId` y según el tipo `clienteId`, `productoId`, `ciudadId`, `proveedorId`, `insumoId` |
 | GET | `/api/reportes/{tipo}/excel` | El mismo reporte como archivo `.xlsx` |
 | GET | `/api/usuarios` | Lista de usuarios (para filtrar reportes) |
+| GET/POST | `/api/admin/usuarios` | Solo administradores: listar / crear usuarios `{nombre, email, rol, password}` |
+| PUT/DELETE | `/api/admin/usuarios/{id}` | Solo administradores: editar `{nombre, email, rol}` / borrar (soft delete) |
+| PUT | `/api/admin/usuarios/{id}/estado` | Solo administradores: `{activo}` para activar o desactivar |
+| PUT | `/api/admin/usuarios/{id}/password` | Solo administradores: `{password}` restablece y desbloquea |
+| GET | `/api/admin/roles` | Solo administradores: roles disponibles |
 
 Ventas, compras y canjes aceptan varios renglones por operación y se guardan en una sola transacción
 (si un renglón falla no se guarda ninguno). Cada operación registra el usuario que la hizo

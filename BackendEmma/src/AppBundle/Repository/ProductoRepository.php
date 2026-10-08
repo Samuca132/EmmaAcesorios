@@ -20,7 +20,6 @@ class ProductoRepository extends ServiceEntityRepository
     public function listar($busqueda = null)
     {
         $qb = $this->createQueryBuilder('p')
-            ->where('p.visible = true')
             ->orderBy('p.nombre');
 
         if ($busqueda) {
@@ -31,11 +30,13 @@ class ProductoRepository extends ServiceEntityRepository
     }
 
     /**
+     * Producto no borrado (el filtro softdeleteable excluye los borrados).
+     *
      * @return Producto|null
      */
-    public function buscarVisible($id)
+    public function buscar($id)
     {
-        return $this->findOneBy(['id' => (int) $id, 'visible' => true]);
+        return $this->find((int) $id);
     }
 
     /**
@@ -47,16 +48,13 @@ class ProductoRepository extends ServiceEntityRepository
      */
     public function buscarParaActualizarStock($id)
     {
-        $producto = $this->getEntityManager()->find(Producto::class, (int) $id, LockMode::PESSIMISTIC_WRITE);
-
-        return $producto && $producto->isVisible() ? $producto : null;
+        return $this->getEntityManager()->find(Producto::class, (int) $id, LockMode::PESSIMISTIC_WRITE);
     }
 
-    public function contarVisibles()
+    public function contarActivos()
     {
         return (int) $this->createQueryBuilder('p')
             ->select('COUNT(p.id)')
-            ->where('p.visible = true')
             ->getQuery()->getSingleScalarResult();
     }
 
@@ -66,7 +64,7 @@ class ProductoRepository extends ServiceEntityRepository
     public function conStockBajo($limite = 5, $max = 10)
     {
         return $this->createQueryBuilder('p')
-            ->where('p.visible = true AND p.stock <= :limite')
+            ->where('p.stock <= :limite')
             ->setParameter('limite', $limite)
             ->orderBy('p.stock')->addOrderBy('p.nombre')
             ->setMaxResults($max)

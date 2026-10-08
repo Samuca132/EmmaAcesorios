@@ -18,6 +18,13 @@ class CompraRepository extends ServiceEntityRepository
      */
     public function listar(array $filtros = [])
     {
+        return IncluyeBorrados::ejecutar($this->getEntityManager(), function () use ($filtros) {
+            return $this->listarSinFiltro($filtros);
+        });
+    }
+
+    private function listarSinFiltro(array $filtros = [])
+    {
         $qb = $this->createQueryBuilder('c')
             ->addSelect('p', 'i', 'u')
             ->join('c.proveedor', 'p')
@@ -36,6 +43,13 @@ class CompraRepository extends ServiceEntityRepository
     }
 
     public function totalDesde(\DateTime $desde)
+    {
+        return IncluyeBorrados::ejecutar($this->getEntityManager(), function () use ($desde) {
+            return $this->totalDesdeSinFiltro($desde);
+        });
+    }
+
+    private function totalDesdeSinFiltro(\DateTime $desde)
     {
         return (float) $this->createQueryBuilder('c')
             ->select('COALESCE(SUM(c.costo), 0)')

@@ -3,14 +3,21 @@
 namespace AppBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
+use Gedmo\SoftDeleteable\Traits\SoftDeleteableEntity;
+use Gedmo\Timestampable\Traits\TimestampableEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity(repositoryClass="AppBundle\Repository\InsumoRepository")
  * @ORM\Table(name="insumo")
+ * @Gedmo\SoftDeleteable(fieldName="deletedAt", timeAware=false, hardDelete=false)
  */
 class Insumo
 {
+    use TimestampableEntity;
+    use SoftDeleteableEntity;
+
     /**
      * @ORM\Id
      * @ORM\GeneratedValue
@@ -49,11 +56,6 @@ class Insumo
      * @Assert\Range(min=0, max=100)
      */
     private $descuentoCanje = 0;
-
-    /**
-     * @ORM\Column(name="visibility", type="boolean", options={"default": 1})
-     */
-    private $visible = true;
 
     public function getId()
     {
@@ -111,18 +113,6 @@ class Insumo
     public function setDescuentoCanje($descuento)
     {
         $this->descuentoCanje = $descuento === null ? 0 : $descuento;
-
-        return $this;
-    }
-
-    public function isVisible()
-    {
-        return $this->visible;
-    }
-
-    public function darDeBaja()
-    {
-        $this->visible = false;
 
         return $this;
     }

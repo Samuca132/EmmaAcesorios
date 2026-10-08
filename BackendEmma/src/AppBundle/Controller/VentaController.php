@@ -76,7 +76,7 @@ class VentaController extends ApiController
             return $errores;
         }
 
-        $cliente = $this->clientes->buscarVisible($data['clienteId']);
+        $cliente = $this->clientes->buscar($data['clienteId']);
         if (!$cliente) {
             return $this->errorDeCampo('clienteId', 'El cliente no existe.');
         }

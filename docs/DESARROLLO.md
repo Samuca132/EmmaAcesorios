@@ -55,6 +55,7 @@ EmmaAcesorios/
 | | Symfony (monolito `symfony/symfony`) | 3.4 LTS |
 | | Doctrine ORM / DBAL | 2.7 / 2.13 |
 | | DoctrineBundle | 1.12 |
+| | StofDoctrineExtensionsBundle / gedmo/doctrine-extensions (Timestampable, SoftDeleteable) | 1.3 / 2.4 |
 | | firebase/php-jwt | 6.x |
 | Base de datos | MariaDB / MySQL | 10.4+ / 5.7+ |
 | Frontend | Angular (standalone components, signals) | 20 |
@@ -128,11 +129,11 @@ del backend, cambialo en `proxy.conf.json` y reiniciá `npm start`.
 ```
 BackendEmma/
 ├── app/
-│   ├── AppKernel.php          Bundles registrados (Framework, Security, Monolog, Doctrine, AppBundle;
-│   │                          WebServerBundle solo en dev)
+│   ├── AppKernel.php          Bundles registrados (Framework, Security, Monolog, Doctrine,
+│   │                          StofDoctrineExtensions, AppBundle; WebServerBundle solo en dev)
 │   ├── autoload.php           Autoload de Composer + carga de .env
 │   └── config/
-│       ├── config.yml         Framework, Doctrine (DBAL + ORM), Monolog, parámetros por defecto
+│       ├── config.yml         Framework, Doctrine (DBAL + ORM + filtro softdeleteable), Gedmo, Monolog
 │       ├── config_{dev,prod,test}.yml
 │       ├── services.yml       Autowiring de todo src/AppBundle (excepto Entity)
 │       ├── security.yml       Encoder bcrypt, provider de entidad, firewalls
@@ -141,13 +142,13 @@ BackendEmma/
 ├── bin/console
 ├── src/AppBundle/
 │   ├── Entity/                Entidades Doctrine (= esquema de la base)
-│   ├── Repository/            Consultas (QueryBuilder / DQL)
+│   ├── Repository/            Consultas (QueryBuilder / DQL) e IncluyeBorrados (historial)
 │   ├── Controller/            Un controlador por recurso
 │   ├── Security/              JWT, autenticador Guard, límite de intentos por IP
 │   ├── Service/               Reportes (datos) y ExcelReporte (archivo .xlsx)
 │   ├── EventSubscriber/       CORS, errores en JSON, mitigación PATH_INFO
 │   └── Command/               Comandos de consola para usuarios
-├── sql/                       Esquema exportado, migración desde v1, alta de usuario por SQL
+├── sql/                       Esquema exportado, migraciones v1→v2 y v2→v3, alta de usuario por SQL
 ├── var/                       Caché y logs (no versionado)
 └── web/                       Document root: app.php + .htaccess
 ```
@@ -189,7 +190,11 @@ Patrón típico de alta/edición (ver `ProductoController::guardar`): leer JSON 
 Extienden `ServiceEntityRepository` y se inyectan por autowiring. Convenciones:
 
 - `listar(...)`: listados con filtros y `JOIN` de las relaciones que se muestran (evita N+1).
-- `buscarVisible($id)`: solo registros no dados de baja.
+- `buscar($id)`: `find` normal; como el filtro de borrados está activo, nunca devuelve un registro
+  borrado.
+- Listados **históricos** (`TicketRepository`, `CompraRepository`, `CanjeRepository`,
+  `Service/Reportes`) se ejecutan con `IncluyeBorrados::ejecutar($em, fn)`, que desactiva el filtro
+  durante la consulta, para seguir mostrando clientes, productos o proveedores dados de baja.
 - `buscarParaActualizarStock($id)`: `find` con `LockMode::PESSIMISTIC_WRITE` (`SELECT … FOR UPDATE`).
   Usar **siempre dentro de una transacción**.
 - Agregados (totales, cantidades) con subconsultas DQL en el `SELECT` para no depender de
@@ -226,23 +231,53 @@ Proveedor 1 ──── n Compra n ──── 1 Insumo
 
 (`1 ── n` = uno a muchos. Por ejemplo, un cliente tiene muchos tickets y cada ticket es de un cliente.)
 
+Además de los campos de la tabla, **todas** las entidades tienen `created_at`, `updated_at` y
+`deleted_at` (ver *Timestamps y borrado lógico*).
+
 ### Detalle por entidad
 
 | Entidad (tabla) | Campos principales (propiedad → columna) | Relaciones | Notas |
 |---|---|---|---|
 | **Ciudad** (`ciudad`) | `nombre`→`NombreCiudad`, `provincia`→`Provincia` (int) | — | Provincias en la constante `Ciudad::PROVINCIAS` |
-| **Cliente** (`cliente`) | `nombre`→`nombreCliente`, `telefono`→`telefonoCliente`, `visible`→`visibility` | `ciudad` → Ciudad (nullable) | Baja lógica (`darDeBaja()`) |
-| **Proveedor** (`proveedores`) | `nombre`, `telefono`→`TelefonoProveedor` | `ciudad` → Ciudad (nullable) | Borrado físico, solo si no tiene compras/canjes |
-| **Producto** (`producto`) | `nombre`→`NombreProducto`, `stock`→`stockProducto`, `precio`→`PrecioProducto`, `coste`→`costeProduccion`, `visible` | — | `descontarStock()` lanza `DomainException` si no alcanza. Baja lógica |
-| **Insumo** (`insumo`) | `nombre`→`NombreInsumo`, `stock`→`Stock`, `precio`, `descuentoCanje`→`DescuentoPactadoCanje` (%), `visible` | — | `sumarStock()`. Baja lógica |
+| **Cliente** (`cliente`) | `nombre`→`nombreCliente`, `telefono`→`telefonoCliente` | `ciudad` → Ciudad (nullable) | |
+| **Proveedor** (`proveedores`) | `nombre`, `telefono`→`TelefonoProveedor` | `ciudad` → Ciudad (nullable) | |
+| **Producto** (`producto`) | `nombre`→`NombreProducto`, `stock`→`stockProducto`, `precio`→`PrecioProducto`, `coste`→`costeProduccion` | — | `descontarStock()` lanza `DomainException` si no alcanza |
+| **Insumo** (`insumo`) | `nombre`→`NombreInsumo`, `stock`→`Stock`, `precio`, `descuentoCanje`→`DescuentoPactadoCanje` (%) | — | `sumarStock()` |
 | **Ticket** (`ticket`) | `fecha`→`Fecha`, `cantidadProductos`→`CProductos`, `total`→`Valor` | `cliente` → Cliente, `usuario` → Usuario, `items` → Venta[] (1:n, cascade persist) | Una venta completa. `agregarProducto()` crea el renglón y descuenta stock |
 | **Venta** (`venta`) | `cantidad`→`CantidadProducto`, `precioUnitario`, `profit`, `fecha`→`fechaVenta`, `total`→`Total` | `ticket`, `cliente`, `producto` | Renglón de un ticket. Guarda el precio del momento |
 | **Compra** (`compras`) | `fecha`→`FechaCompra`, `cantidad`, `costo` | `proveedor`, `insumo`, `usuario` | Un renglón por insumo comprado |
 | **Canje** (`canjes`) | `fecha`→`FechaCanje`, `cantidadProducto`, `cantidadInsumo`, `profit`→`Profit` | `proveedor`, `producto`, `insumo`, `usuario` | `calcularProfit()` |
-| **Usuario** (`usuario`) | `nombre`, `email`→`UsuarioEmail` (único), `password`→`PasswordHash`, `rol`, `activo`, `intentosFallidos`, `bloqueadoHasta`, `ultimoLogin`, `fechaCreacion` | — | Implementa `AdvancedUserInterface`. Rol 1 = admin |
+| **Usuario** (`usuario`) | `nombre`, `email`→`UsuarioEmail` (único), `password`→`PasswordHash`, `rol`, `activo`, `intentosFallidos`, `bloqueadoHasta`, `ultimoLogin` | — | Implementa `AdvancedUserInterface`. Roles en `Usuario::ROLES` (1 = Administrador, 2 = Usuario) |
 
 Los montos son `DECIMAL(12,2)`; Doctrine los devuelve como string y los getters los convierten a
 `float`. El campo `usuario` de Ticket/Compra/Canje es `null` en registros anteriores a su creación.
+
+### Timestamps y borrado lógico (todas las entidades)
+
+Todas las entidades usan los traits de Gedmo:
+
+```php
+/**
+ * @ORM\Entity(...)
+ * @Gedmo\SoftDeleteable(fieldName="deletedAt", timeAware=false, hardDelete=false)
+ */
+class Producto
+{
+    use TimestampableEntity;   // created_at, updated_at (se completan solos)
+    use SoftDeleteableEntity;  // deleted_at (NULL = activo)
+```
+
+- `created_at` / `updated_at` los completa Gedmo al insertar y al modificar.
+- **Todos los borrados son soft delete**: `$em->remove($entidad); $em->flush();` no ejecuta un `DELETE`,
+  sino que guarda la fecha en `deleted_at`. `hardDelete=false` hace que borrar dos veces tampoco elimine
+  la fila.
+- El filtro Doctrine `softdeleteable` (activo siempre, `config.yml`) agrega `deleted_at IS NULL` a todas
+  las consultas: los borrados no aparecen en catálogos, búsquedas, `find()` ni en el login (un usuario
+  borrado no puede ingresar).
+- Los listados históricos lo desactivan con `IncluyeBorrados` (ver Repositorios).
+- Para recuperar un registro borrado: `UPDATE tabla SET deleted_at = NULL WHERE ...`.
+- Ciudades: no se pueden borrar mientras tengan clientes o proveedores **activos** (409). El resto se
+  puede borrar siempre: el historial no se pierde.
 
 ## 6. Base de datos: creación, cambios y migración
 
@@ -287,6 +322,24 @@ Después, `doctrine:schema:update --force` agrega claves foráneas, índices, la
 
 El dump original queda como referencia en `sql/emmaaccesorios_v1_original.sql`.
 
+### Migración v2 → v3 (timestamps y soft delete)
+
+Para bases que ya estaban en v2 (o recién migradas desde v1), **antes** de `schema:update`:
+
+```bash
+mysqldump -u root emmaaccesorios > backup_antes_v3.sql
+mysql -u root emmaaccesorios < sql/migracion_v2_a_v3.sql
+php bin/console doctrine:schema:update --dump-sql
+php bin/console doctrine:schema:update --force
+php bin/console doctrine:schema:validate
+```
+
+El script agrega `created_at`, `updated_at` y `deleted_at` con datos reales (las ventas, compras y
+canjes toman su propia fecha como `created_at`), pasa lo que estaba oculto con `visibility = 0` a
+`deleted_at` y renombra `usuario.FechaCreacion` a `created_at`. Sin este paso, `schema:update`
+borraría `visibility` perdiendo qué registros estaban dados de baja y cargaría fechas `0000-00-00`.
+Usa sintaxis de MariaDB (`ADD COLUMN IF NOT EXISTS`, `CHANGE COLUMN IF EXISTS`).
+
 ## 7. Seguridad y autenticación
 
 ### Flujo de login
@@ -320,8 +373,18 @@ Frontend                         Backend                                   Base
 Del lado del frontend el token se guarda en `sessionStorage` (se borra al cerrar el navegador), se
 agrega en cada petición con un interceptor y, al vencer o recibir 401, se cierra la sesión.
 
-Roles: `ROLE_ADMIN` (rol 1) y `ROLE_USER` (rol 2). Hoy todas las pantallas están disponibles para
-ambos; para restringir algo, agregar una regla en `access_control` de `security.yml`.
+Roles: `ROLE_ADMIN` (rol 1) y `ROLE_USER` (rol 2), definidos en `Usuario::ROLES` y
+`Usuario::getRoles()`.
+
+- `/api/admin/*` (Configuración) exige `ROLE_ADMIN` en `access_control` de `security.yml`; un usuario
+  de rol 2 recibe **403**.
+- En el frontend, `AuthService.esAdmin()` oculta el grupo *Configuración* del menú y `adminGuard`
+  protege la ruta `/configuracion` (redirige a Inicio). Es solo comodidad: la seguridad real es la del
+  backend.
+- El resto de las pantallas está disponible para ambos roles. Para restringir algo más, sumar reglas en
+  `access_control` y, si corresponde, ocultarlo en el menú.
+- Para agregar un rol: sumarlo a `Usuario::ROLES`, mapearlo en `getRoles()` y, si hereda permisos,
+  en `role_hierarchy` de `security.yml`. Aparece solo en el formulario de Configuración.
 
 ## 8. API REST
 
@@ -338,7 +401,7 @@ Cuerpos y respuestas en JSON.
 | POST · PUT `/{id}` · DELETE `/{id}` | `/productos` | `{nombre, stock, precio, coste}` | Producto / 204 |
 | GET · POST · PUT · DELETE | `/insumos` | `{nombre, stock, precio, descuentoCanje?}` | |
 | GET · POST · PUT · DELETE | `/clientes` | `{nombre, ciudadId?, telefono?}` | Incluye `compras` y `totalComprado` |
-| GET · POST · PUT · DELETE | `/proveedores` | `{nombre, ciudadId?, telefono?}` | DELETE → 409 si tiene compras/canjes |
+| GET · POST · PUT · DELETE | `/proveedores` | `{nombre, ciudadId?, telefono?}` | |
 | GET · POST · PUT · DELETE | `/ciudades` | `{nombre, provincia}` | DELETE → 409 si está en uso |
 | GET | `/provincias` | — | `[{id, nombre}]` |
 | GET | `/ventas` | `?clienteId&productoId&ciudadId&desde&hasta` (fechas `YYYY-MM-DD`) | Tickets |
@@ -351,14 +414,22 @@ Cuerpos y respuestas en JSON.
 | GET | `/reportes/{ventas\|compras\|canjes}` | Filtros (ver sección 9) | `{titulo, filtros, columnas, filas, totales, resumen}` |
 | GET | `/reportes/{tipo}/excel` | Mismos filtros | Archivo `.xlsx` (`Content-Disposition: attachment`) |
 | GET | `/usuarios` | — | `[{id, nombre}]` (para el filtro "Registró") |
+| GET | `/admin/usuarios` | — (solo rol 1) | Usuarios con email, rol, estado, último ingreso y alta |
+| POST | `/admin/usuarios` | `{nombre, email, rol, password}` (solo rol 1, password ≥ 12) | Usuario creado. 422 si el email ya existe (aunque esté borrado) |
+| PUT | `/admin/usuarios/{id}` | `{nombre, email, rol}` | Usuario actualizado (422 si el email existe o si te quitás admin) |
+| PUT | `/admin/usuarios/{id}/estado` | `{activo: true\|false}` | Usuario (409 si es tu usuario o el último admin activo) |
+| PUT | `/admin/usuarios/{id}/password` | `{password}` (≥ 12) | Usuario; además lo desbloquea |
+| DELETE | `/admin/usuarios/{id}` | — | 204, soft delete (409 si es tu usuario o el último admin activo) |
+| GET | `/admin/roles` | — (solo rol 1) | `[{id, nombre}]` |
 
 Códigos de estado:
 
 | Código | Significado |
 |---|---|
-| 200 / 201 / 204 | OK / creado / borrado |
+| 200 / 201 / 204 | OK / creado / borrado (soft delete) |
 | 400 | JSON inválido o ruta mal formada |
 | 401 | Sin token, token vencido o credenciales incorrectas |
+| 403 | Sin permisos (p. ej. rol 2 en `/api/admin`) |
 | 404 | Registro o ruta inexistente |
 | 409 | Conflicto de negocio (sin stock, registro en uso) |
 | 422 | Validación: `{message, errors: {campo: mensaje}}`. En renglones: `items.0.cantidad` |
@@ -401,9 +472,28 @@ curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/api/productos
 
 ### Bajas
 
-- Productos, insumos y clientes: **baja lógica** (`visibility = 0`); desaparecen de los listados pero se
-  conservan para el historial.
-- Proveedores y ciudades: borrado real, solo si no están referenciados (si no → 409).
+- **Todo borrado es soft delete** (`deleted_at`): el registro desaparece de catálogos, formularios y
+  búsquedas, pero sigue en la base y en el historial (ventas, compras, canjes, reportes).
+- Un producto o insumo borrado ya no se puede vender, comprar ni canjear; un cliente borrado ya no puede
+  recibir ventas (la API responde que no existe).
+- Ciudades: no se pueden borrar mientras tengan clientes o proveedores activos (409).
+
+### Usuarios (Configuración)
+
+- Solo los administradores (rol 1) ven la sección **Configuración** (`AdminUsuarioController`) y
+  pueden **crear, editar** (nombre, email, rol), **restablecer la contraseña** (también desbloquea),
+  **desactivar/activar** y **borrar** (soft delete) usuarios.
+- Protecciones (en el backend; el frontend además oculta las acciones): nadie puede desactivarse,
+  borrarse ni quitarse el rol de administrador a sí mismo, y siempre debe quedar al menos un
+  administrador activo (`UsuarioRepository::contarAdminsActivos()`).
+- Desactivar o borrar corta el acceso al instante: `JwtAuthenticator` recarga el usuario en cada
+  petición, así que el token que ya tenía deja de valer (401).
+- Login de un usuario inactivo: si la contraseña es correcta responde **403** "Tu usuario está
+  desactivado"; si no, el 401 genérico (no revela nada a quien no conoce la contraseña).
+- La contraseña se valida (mínimo 12 caracteres) y se guarda con bcrypt; el formulario puede generarla
+  con `crypto.getRandomValues` y la muestra una única vez.
+- El email se guarda en minúsculas y es único, incluso contra usuarios borrados.
+- También se pueden crear por consola (`app:usuario:crear`).
 
 ### Reportes
 
@@ -472,7 +562,7 @@ AccesoriosEmma/
 
 | Componente | Qué hace |
 |---|---|
-| `DataTable` (`app-data-table`) | Tabla Material con búsqueda (sin acentos ni mayúsculas), orden por columna, paginado y menú Editar/Borrar o botón Ver. Las columnas se configuran con `Columna<T>` (`tipo`: texto, numero, moneda, fecha, fechaHora, porcentaje; `alertaSi` pinta en rojo valores bajos) |
+| `DataTable` (`app-data-table`) | Tabla Material con búsqueda (sin acentos ni mayúsculas), orden por columna, paginado y menú Editar/Borrar o botón Ver. Acepta acciones extra por fila (`acciones: AccionFila<T>[]`, evento `accion`) y `borrable` para ocultar Borrar en algunas filas. Las columnas se configuran con `Columna<T>` (`tipo`: texto, numero, moneda, fecha, fechaHora, porcentaje; `alertaSi` pinta en rojo valores bajos) |
 | `FormDialog` | Modal de alta/edición generado a partir de una lista de `CampoFormulario` (texto, número, entero, select, fecha, teléfono). Muestra en cada campo los errores 422 del backend |
 | `CrudPage<T>` | Clase base de las pantallas ABM: carga el listado y abre los modales de alta, edición y borrado. Una pantalla nueva solo define `recurso`, `columnas`, `campos()` y `valoresDe()` |
 | `ConfirmDialog` / `confirmar()` | Confirmación antes de borrar |
@@ -491,6 +581,7 @@ AccesoriosEmma/
 | `/productos`, `/insumos`, `/proveedores`, `/ciudades`, `/clientes` | `*Page extends CrudPage` | ABM con `FormDialog` |
 | `/clientes/:id` | `ClienteDetallePage` | Perfil + historial + nueva venta |
 | `/reportes` | `ReportesPage` | Pestañas ventas/compras/canjes, filtros, vista previa y descarga Excel |
+| `/configuracion` | `ConfiguracionPage` (`adminGuard`) + `RestablecerPasswordDialog` | Pestañas *Usuarios* (lista con editar, contraseña, activar/desactivar, borrar) y *Agregar usuario* |
 
 Todas las rutas (salvo login) están bajo el componente `Shell` (`layout/shell.ts`), que arma el
 *navigation drawer* lateral (fijo en escritorio, desplegable en celular) y el menú de usuario.
@@ -523,7 +614,8 @@ Todas las rutas (salvo login) están bajo el componente `Shell` (`layout/shell.t
 ### Un catálogo nuevo (ej. Categorías)
 
 **Backend**
-1. `Entity/Categoria.php` con `repositoryClass`.
+1. `Entity/Categoria.php` con `repositoryClass`, los traits `TimestampableEntity` y
+   `SoftDeleteableEntity` y la anotación `@Gedmo\SoftDeleteable(fieldName="deletedAt", timeAware=false, hardDelete=false)`.
 2. `Repository/CategoriaRepository.php` (extiende `ServiceEntityRepository`).
 3. `Controller/CategoriaController.php` copiando el patrón de `CiudadController`.
 4. `app/config/routing/categorias.yml` e importarlo en `routing.yml`.
@@ -575,7 +667,9 @@ entidades, `flush`, `commit`; ante `DomainException` → `rollback` y 409. Regis
 - **Migraciones versionadas**: sumar DoctrineMigrationsBundle en lugar de `schema:update`.
 - **Compras y canjes agrupados**: cada renglón es una fila independiente. Si se necesita ver/anular
   una compra completa, agregar una entidad cabecera (como `Ticket` en ventas).
-- **Roles**: los dos roles ven todo; definir qué puede hacer cada uno si se suman empleados.
+- **Roles**: por ahora el rol solo restringe Configuración; falta definir qué puede hacer cada rol en el
+  resto del sistema.
+- **Papelera**: no hay pantalla para ver o restaurar registros borrados (se restauran por SQL).
 - **Anulación de ventas** (devolver stock): no implementada.
 - **Reportes muy grandes**: el Excel se arma en memoria; con decenas de miles de renglones conviene
   paginar la vista previa y generar el archivo en segundo plano.

@@ -131,6 +131,31 @@ export interface Reporte extends TablaReporte {
   resumen: TablaReporte[];
 }
 
+export interface Rol {
+  id: number;
+  nombre: string;
+}
+
+/** Usuario tal como lo ve un administrador en Configuración. */
+export interface UsuarioAdmin {
+  id: number;
+  nombre: string;
+  email: string;
+  rol: number;
+  rolNombre: string;
+  activo: boolean;
+  bloqueado: boolean;
+  ultimoLogin: string | null;
+  creado: string | null;
+}
+
+export interface NuevoUsuario {
+  nombre: string;
+  email: string;
+  rol: number;
+  password: string;
+}
+
 export interface UsuarioResumen {
   id: number;
   nombre: string;

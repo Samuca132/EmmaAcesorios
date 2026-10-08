@@ -22,6 +22,8 @@ export class AuthService {
 
   readonly usuario = computed(() => this.sesion()?.usuario ?? null);
   readonly autenticado = computed(() => this.sesion() !== null);
+  /** Rol 1 = administrador. */
+  readonly esAdmin = computed(() => this.sesion()?.usuario.rol === 1);
 
   constructor() {
     this.programarExpiracion();
@@ -42,6 +44,15 @@ export class AuthService {
         this.programarExpiracion();
       }),
     );
+  }
+
+  /** Actualiza nombre/email de la sesión cuando el usuario edita sus propios datos. */
+  actualizarDatos(datos: Partial<Pick<Usuario, 'nombre' | 'email'>>): void {
+    const s = this.sesion();
+    if (!s) return;
+    const sesion: Sesion = { ...s, usuario: { ...s.usuario, ...datos } };
+    sessionStorage.setItem(CLAVE_SESION, JSON.stringify(sesion));
+    this.sesion.set(sesion);
   }
 
   cambiarPassword(actual: string, nueva: string): Observable<unknown> {

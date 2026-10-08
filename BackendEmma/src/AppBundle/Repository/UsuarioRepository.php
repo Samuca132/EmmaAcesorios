@@ -20,4 +20,17 @@ class UsuarioRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['email' => mb_strtolower(trim($email))]);
     }
+
+    /**
+     * Administradores activos (no borrados). Sirve para no dejar el sistema
+     * sin nadie que pueda entrar a Configuración.
+     */
+    public function contarAdminsActivos()
+    {
+        return (int) $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->where('u.rol = :rol AND u.activo = true')
+            ->setParameter('rol', Usuario::ROL_ADMIN)
+            ->getQuery()->getSingleScalarResult();
+    }
 }

@@ -1,5 +1,5 @@
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -35,7 +35,7 @@ interface ItemMenu {
           <img src="logoEmma.png" alt="" width="48" height="48" />
           <span>Emma Accesorios</span>
         </div>
-        @for (grupo of menu; track grupo.titulo) {
+        @for (grupo of menu(); track grupo.titulo) {
           <mat-nav-list>
             <div mat-subheader>{{ grupo.titulo }}</div>
             @for (item of grupo.items; track item.ruta) {
@@ -91,7 +91,7 @@ export class Shell {
     { initialValue: false },
   );
 
-  readonly menu: { titulo: string; items: ItemMenu[] }[] = [
+  private readonly menuBase: { titulo: string; items: ItemMenu[] }[] = [
     {
       titulo: 'General',
       items: [{ ruta: '/inicio', texto: 'Inicio', icono: 'dashboard' }],
@@ -119,6 +119,16 @@ export class Shell {
       ],
     },
   ];
+
+  /** El grupo Configuración solo lo ven los administradores (rol 1). */
+  readonly menu = computed(() =>
+    this.auth.esAdmin()
+      ? [
+          ...this.menuBase,
+          { titulo: 'Configuración', items: [{ ruta: '/configuracion', texto: 'Configuración', icono: 'settings' }] },
+        ]
+      : this.menuBase,
+  );
 
   cerrarEnMovil(drawer: MatSidenav): void {
     if (this.esMovil()) drawer.close();

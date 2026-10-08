@@ -15,7 +15,7 @@ class ClienteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Clientes visibles con la cantidad de compras y el total comprado.
+     * Clientes (no borrados) con la cantidad de compras y el total comprado.
      *
      * @return array[] cada fila: [0 => Cliente, 'compras' => int, 'totalComprado' => string]
      */
@@ -37,22 +37,22 @@ class ClienteRepository extends ServiceEntityRepository
     public function buscarConTotales($id)
     {
         return $this->consultaConTotales()
-            ->andWhere('c.id = :id')->setParameter('id', (int) $id)
+            ->where('c.id = :id')->setParameter('id', (int) $id)
             ->getQuery()->getOneOrNullResult();
     }
 
     /**
      * @return Cliente|null
      */
-    public function buscarVisible($id)
+    public function buscar($id)
     {
-        return $this->findOneBy(['id' => (int) $id, 'visible' => true]);
+        return $this->find((int) $id);
     }
 
-    public function contarVisibles()
+    public function contarActivos()
     {
         return (int) $this->createQueryBuilder('c')
-            ->select('COUNT(c.id)')->where('c.visible = true')
+            ->select('COUNT(c.id)')
             ->getQuery()->getSingleScalarResult();
     }
 
@@ -62,7 +62,6 @@ class ClienteRepository extends ServiceEntityRepository
             ->addSelect('ci')
             ->addSelect(sprintf('(SELECT COUNT(t1.id) FROM %s t1 WHERE t1.cliente = c) AS compras', Ticket::class))
             ->addSelect(sprintf('(SELECT COALESCE(SUM(t2.total), 0) FROM %s t2 WHERE t2.cliente = c) AS totalComprado', Ticket::class))
-            ->leftJoin('c.ciudad', 'ci')
-            ->where('c.visible = true');
+            ->leftJoin('c.ciudad', 'ci');
     }
 }

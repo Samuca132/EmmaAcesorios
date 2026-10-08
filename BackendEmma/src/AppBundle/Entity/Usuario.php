@@ -3,6 +3,9 @@
 namespace AppBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
+use Gedmo\SoftDeleteable\Traits\SoftDeleteableEntity;
+use Gedmo\Timestampable\Traits\TimestampableEntity;
 use Symfony\Component\Security\Core\User\AdvancedUserInterface;
 
 /**
@@ -10,11 +13,21 @@ use Symfony\Component\Security\Core\User\AdvancedUserInterface;
  *
  * @ORM\Entity(repositoryClass="AppBundle\Repository\UsuarioRepository")
  * @ORM\Table(name="usuario", uniqueConstraints={@ORM\UniqueConstraint(name="uq_usuario_email", columns={"UsuarioEmail"})})
+ * @Gedmo\SoftDeleteable(fieldName="deletedAt", timeAware=false, hardDelete=false)
  */
 class Usuario implements AdvancedUserInterface
 {
+    use TimestampableEntity;
+    use SoftDeleteableEntity;
+
     const ROL_ADMIN = 1;
     const ROL_USUARIO = 2;
+
+    /** Roles disponibles. Para sumar uno nuevo, agregarlo acá y en getRoles(). */
+    const ROLES = [
+        self::ROL_ADMIN => 'Administrador',
+        self::ROL_USUARIO => 'Usuario',
+    ];
 
     /** Cantidad de intentos fallidos antes de bloquear la cuenta. */
     const MAX_INTENTOS = 5;
@@ -69,17 +82,11 @@ class Usuario implements AdvancedUserInterface
      */
     private $ultimoLogin;
 
-    /**
-     * @ORM\Column(name="FechaCreacion", type="datetime")
-     */
-    private $fechaCreacion;
-
     public function __construct($email, $nombre, $rol = self::ROL_USUARIO)
     {
         $this->email = mb_strtolower(trim($email));
         $this->nombre = $nombre;
         $this->rol = (int) $rol;
-        $this->fechaCreacion = new \DateTime();
     }
 
     public function getId()
@@ -100,6 +107,44 @@ class Usuario implements AdvancedUserInterface
     public function getRol()
     {
         return $this->rol;
+    }
+
+    public function getNombreRol()
+    {
+        return isset(self::ROLES[$this->rol]) ? self::ROLES[$this->rol] : 'Rol '.$this->rol;
+    }
+
+    public function esAdmin()
+    {
+        return $this->rol === self::ROL_ADMIN;
+    }
+
+    public function setNombre($nombre)
+    {
+        $this->nombre = $nombre;
+
+        return $this;
+    }
+
+    public function setEmail($email)
+    {
+        $this->email = mb_strtolower(trim($email));
+
+        return $this;
+    }
+
+    public function setRol($rol)
+    {
+        $this->rol = (int) $rol;
+
+        return $this;
+    }
+
+    public function setActivo($activo)
+    {
+        $this->activo = (bool) $activo;
+
+        return $this;
     }
 
     public function setPassword($hash)
@@ -133,7 +178,7 @@ class Usuario implements AdvancedUserInterface
         }
     }
 
-    private function desbloquear()
+    public function desbloquear()
     {
         $this->intentosFallidos = 0;
         $this->bloqueadoHasta = null;
@@ -184,6 +229,24 @@ class Usuario implements AdvancedUserInterface
     public function isEnabled()
     {
         return (bool) $this->activo;
+    }
+
+    /**
+     * Datos para la pantalla de administración de usuarios.
+     */
+    public function toArrayAdmin()
+    {
+        return [
+            'id' => $this->id,
+            'nombre' => $this->nombre,
+            'email' => $this->email,
+            'rol' => (int) $this->rol,
+            'rolNombre' => $this->getNombreRol(),
+            'activo' => (bool) $this->activo,
+            'bloqueado' => $this->estaBloqueado(),
+            'ultimoLogin' => $this->ultimoLogin ? $this->ultimoLogin->format('Y-m-d H:i:s') : null,
+            'creado' => $this->createdAt ? $this->createdAt->format('Y-m-d H:i:s') : null,
+        ];
     }
 
     public function toArray()

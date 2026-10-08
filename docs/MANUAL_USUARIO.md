@@ -16,9 +16,10 @@ canjes, y mantener al día productos, insumos, clientes y proveedores.
 9. [Canjes](#9-canjes)
 10. [Reportes y Excel](#10-reportes-y-excel)
 11. [Proveedores y ciudades](#11-proveedores-y-ciudades)
-12. [Tu cuenta: contraseña y cierre de sesión](#12-tu-cuenta-contraseña-y-cierre-de-sesión)
-13. [Usar el sistema desde el celular](#13-usar-el-sistema-desde-el-celular)
-14. [Preguntas frecuentes y mensajes](#14-preguntas-frecuentes-y-mensajes)
+12. [Configuración: usuarios (solo administradores)](#12-configuración-usuarios-solo-administradores)
+13. [Tu cuenta: contraseña y cierre de sesión](#13-tu-cuenta-contraseña-y-cierre-de-sesión)
+14. [Usar el sistema desde el celular](#14-usar-el-sistema-desde-el-celular)
+15. [Preguntas frecuentes y mensajes](#15-preguntas-frecuentes-y-mensajes)
 
 ---
 
@@ -61,6 +62,7 @@ A la izquierda está el **menú** con todas las secciones:
 | | Clientes | A quién le vendés |
 | | Proveedores | A quién le comprás insumos |
 | | Ciudades | Ciudades de clientes y proveedores |
+| Configuración | Configuración | Crear usuarios. **Solo la ven los administradores** |
 
 Arriba a la derecha está tu nombre: desde ahí cambiás la contraseña o cerrás la sesión.
 
@@ -83,6 +85,11 @@ algo, el campo se marca en rojo con el motivo. **Cancelar** (o la tecla Esc) cie
 guardar.
 
 Antes de borrar, el sistema siempre pide confirmación.
+
+> **Borrar no elimina la información.** Lo que borrás deja de aparecer en los listados y ya no se puede
+> usar en ventas, compras o canjes nuevos, pero queda guardado: las ventas, compras, canjes y reportes
+> anteriores lo siguen mostrando. Si borraste algo por error, quien administra el sistema puede
+> recuperarlo.
 
 ## 4. Clientes
 
@@ -234,14 +241,59 @@ canjes.
 
 ## 11. Proveedores y ciudades
 
-- **Proveedores**: nombre, ciudad y teléfono. Un proveedor que ya tiene compras o canjes no se puede
-  borrar (para no perder el historial).
+- **Proveedores**: nombre, ciudad y teléfono. Si borrás un proveedor, sus compras y canjes anteriores
+  siguen apareciendo en el historial.
 - **Ciudades**: nombre y provincia. La columna *Clientes* muestra cuántos clientes hay en cada una.
-  Una ciudad que tiene clientes o proveedores no se puede borrar.
+  Una ciudad que tiene clientes o proveedores (activos) no se puede borrar.
 
 Conviene cargar las ciudades **antes** que los clientes y proveedores, para poder elegirlas.
 
-## 12. Tu cuenta: contraseña y cierre de sesión
+## 12. Configuración: usuarios (solo administradores)
+
+Si tu usuario es **Administrador**, en el menú aparece **Configuración**. Los demás usuarios no la ven
+ni pueden entrar.
+
+**Ver los usuarios:** la pestaña **Usuarios** muestra nombre, email, rol, estado (activo o bloqueado
+temporalmente por intentos fallidos), último ingreso y fecha de alta.
+
+![Usuarios](img/19-configuracion-usuarios.png)
+
+**Agregar un usuario:**
+
+1. Abrí la pestaña **Agregar usuario** (o tocá el botón **Agregar usuario** de la lista).
+2. Completá **nombre**, **email** y elegí el **rol**:
+   - **Administrador**: puede hacer todo, incluida esta sección.
+   - **Usuario**: usa todo el sistema salvo Configuración.
+3. Escribí una contraseña de al menos **12 caracteres** y repetila, o tocá **Generar contraseña segura**
+   para que el sistema cree una de 20 caracteres.
+4. Tocá **Crear usuario**.
+
+![Agregar usuario](img/20-agregar-usuario.png)
+
+> La contraseña se muestra **solo mientras estás en esa pantalla**: copiala y pasásela a la persona por
+> un medio seguro. Después puede cambiarla desde su menú (*Cambiar contraseña*).
+
+No se pueden repetir emails: si ya existe un usuario con ese email (aunque haya sido dado de baja), el
+sistema avisa en el campo.
+
+**Administrar un usuario existente:** en la pestaña **Usuarios**, tocá el botón **⋮** de su fila:
+
+![Acciones sobre un usuario](img/21-gestion-usuarios.png)
+
+| Acción | Qué hace |
+|---|---|
+| **Editar** | Cambia nombre, email o rol. |
+| **Restablecer contraseña** | Le pone una contraseña nueva (podés generarla). Si estaba bloqueado por intentos fallidos, lo desbloquea. Usalo cuando alguien se olvida la contraseña. |
+| **Desactivar** / **Activar** | Desactivado no puede ingresar y, si estaba usando el sistema, se le cierra la sesión. Se puede volver a activar en cualquier momento. Conviene para alguien que deja de trabajar por un tiempo. |
+| **Borrar** | Lo quita de la lista y no puede ingresar más. Las ventas, compras y canjes que registró se conservan con su nombre. |
+
+Para cuidar que el sistema no quede sin acceso:
+
+- Tu propio usuario aparece como **(vos)** y no podés desactivarlo, borrarlo ni quitarte el rol de
+  Administrador.
+- Siempre tiene que quedar al menos un administrador activo.
+
+## 13. Tu cuenta: contraseña y cierre de sesión
 
 Tocá tu nombre arriba a la derecha:
 
@@ -258,7 +310,7 @@ para el verano"*).
 Todo lo que registres (ventas, compras y canjes) queda asociado a tu usuario y se ve en la columna
 **Registró**. Por eso cada persona debería tener su propio usuario y no compartir contraseñas.
 
-## 13. Usar el sistema desde el celular
+## 14. Usar el sistema desde el celular
 
 El sistema se adapta a pantallas chicas. El menú se abre con el botón **☰** de arriba a la izquierda.
 Si una tabla tiene muchas columnas, deslizala hacia los costados.
@@ -268,7 +320,7 @@ Si una tabla tiene muchas columnas, deslizala hacia los costados.
   <img src="img/17-movil-menu.png" alt="Menú en el celular" width="260">
 </p>
 
-## 14. Preguntas frecuentes y mensajes
+## 15. Preguntas frecuentes y mensajes
 
 | Mensaje o situación | Qué significa / qué hacer |
 |---|---|
@@ -277,7 +329,12 @@ Si una tabla tiene muchas columnas, deslizala hacia los costados.
 | *Demasiados intentos. Esperá unos minutos…* | Hubo muchos intentos fallidos desde esa conexión. Esperá 15 minutos. |
 | *Tu sesión venció. Volvé a ingresar.* | Pasaron 8 horas o el sistema se reinició. Ingresá de nuevo; lo ya guardado no se pierde. |
 | *No hay stock suficiente de "…" (disponible: N)* | Bajá la cantidad o cargá más stock en Productos. No se guardó nada de esa operación. |
-| *No se puede borrar: …* | La ciudad o el proveedor tiene registros asociados. |
+| *No se puede borrar: hay clientes o proveedores en esta ciudad.* | Primero cambiales la ciudad o borralos. |
+| Borré algo por error | No se perdió: pedile a quien administra el sistema que lo recupere. |
+| No veo **Configuración** en el menú | Solo la ven los usuarios con rol Administrador. |
+| *Tu usuario está desactivado. Consultá con un administrador.* | Un administrador desactivó tu usuario; pedile que lo vuelva a activar. |
+| Me olvidé la contraseña | Un administrador puede ponerte una nueva desde Configuración → Usuarios → **Restablecer contraseña**. |
+| *No tenés permisos para esta acción.* | Tu rol no puede hacer eso; pedíselo a un administrador. |
 | *No se pudo conectar con el servidor.* | Revisá tu conexión a internet; si sigue, avisá a quien administra el sistema. |
 | El reporte dice *No hay registros para los filtros elegidos* | Revisá las fechas (por defecto es el mes en curso) o tocá **Sin filtros**. |
 | Un campo aparece en rojo | Leé el mensaje debajo del campo (obligatorio, número negativo, etc.). |

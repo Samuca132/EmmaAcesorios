@@ -25,8 +25,8 @@ class DashboardController extends ApiController
             'ticketsMes' => $ventas['cantidad'],
             'gananciaMes' => $ventas['ganancia'],
             'comprasMes' => $compras->totalDesde($inicioMes),
-            'clientes' => $clientes->contarVisibles(),
-            'productos' => $productos->contarVisibles(),
+            'clientes' => $clientes->contarActivos(),
+            'productos' => $productos->contarActivos(),
             'stockBajo' => array_map(function (Producto $p) {
                 return ['id' => $p->getId(), 'nombre' => $p->getNombre(), 'stock' => $p->getStock()];
             }, $productos->conStockBajo()),

@@ -82,3 +82,37 @@ usuarios_listar:
     path: /api/usuarios
     controller: AppBundle\Controller\ReporteController::usuarios
     methods: [GET]
+
+# ---------------- Configuración (solo administradores, ver security.yml) ----------------
+admin_usuarios_listar:
+    path: /api/admin/usuarios
+    controller: AppBundle\Controller\AdminUsuarioController::listar
+    methods: [GET]
+admin_usuarios_crear:
+    path: /api/admin/usuarios
+    controller: AppBundle\Controller\AdminUsuarioController::crear
+    methods: [POST]
+admin_roles:
+    path: /api/admin/roles
+    controller: AppBundle\Controller\AdminUsuarioController::roles
+    methods: [GET]
+admin_usuarios_editar:
+    path: /api/admin/usuarios/{id}
+    controller: AppBundle\Controller\AdminUsuarioController::editar
+    methods: [PUT]
+    requirements: { id: '\d+' }
+admin_usuarios_estado:
+    path: /api/admin/usuarios/{id}/estado
+    controller: AppBundle\Controller\AdminUsuarioController::estado
+    methods: [PUT]
+    requirements: { id: '\d+' }
+admin_usuarios_password:
+    path: /api/admin/usuarios/{id}/password
+    controller: AppBundle\Controller\AdminUsuarioController::password
+    methods: [PUT]
+    requirements: { id: '\d+' }
+admin_usuarios_borrar:
+    path: /api/admin/usuarios/{id}
+    controller: AppBundle\Controller\AdminUsuarioController::borrar
+    methods: [DELETE]
+    requirements: { id: '\d+' }
