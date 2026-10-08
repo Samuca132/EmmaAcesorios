@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         executionOrder="depends,defects">
+    <php>
+        <ini name="error_reporting" value="E_ALL &amp; ~E_DEPRECATED &amp; ~E_USER_DEPRECATED"/>
+        <server name="KERNEL_CLASS" value="AppKernel"/>
+        <env name="JWT_SECRET" value="secreto-solo-para-pruebas-0123456789abcdef"/>
+        <env name="JWT_TTL" value="3600"/>
+        <env name="CORS_ALLOW_ORIGIN" value="^https?://localhost(:[0-9]+)?$"/>
+    </php>
+    <testsuites>
+        <testsuite name="Backend">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

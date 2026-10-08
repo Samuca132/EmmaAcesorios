@@ -21,3 +21,13 @@ productos_borrar:
     controller: AppBundle\Controller\ProductoController::borrar
     methods: [DELETE]
     requirements: { id: '\d+' }
+productos_composicion:
+    path: /api/productos/{id}/composicion
+    controller: AppBundle\Controller\ProductoController::composicion
+    methods: [GET]
+    requirements: { id: '\d+' }
+productos_composicion_guardar:
+    path: /api/productos/{id}/composicion
+    controller: AppBundle\Controller\ProductoController::guardarComposicion
+    methods: [PUT]
+    requirements: { id: '\d+' }

@@ -67,6 +67,7 @@ Los scripts se corren en orden y **una sola vez** cada uno, según desde qué ve
 |---|---|
 | v1 (el `index.php` original) | `migracion_v1_a_v2.sql` y después `migracion_v2_a_v3.sql` |
 | v2 (Symfony, antes de timestamps/soft delete) | `migracion_v2_a_v3.sql` |
+| v3 (con timestamps y soft delete) | solo `migracion_v3_a_v4.sql` (paso 5) |
 
 ```bash
 mysqldump -u root emmaaccesorios > backup_emmaaccesorios.sql     # 1. backup
@@ -75,12 +76,16 @@ mysql -u root emmaaccesorios < sql/migracion_v2_a_v3.sql         # 2b. timestamp
 php bin/console doctrine:schema:update --dump-sql                # 3. revisar lo que falta
 php bin/console doctrine:schema:update --force                   #    y aplicarlo
 php bin/console doctrine:schema:validate                         # 4. verificar
+mysql -u root emmaaccesorios < sql/migracion_v3_a_v4.sql         # 5. historial, anulaciones, costos, pases
+php bin/console cache:clear --env=prod                           # 6. limpiar la caché de producción
 ```
 
 Los scripts SQL convierten tipos y datos que Doctrine no puede migrar sin perder información (IDs
 guardados como texto, ventas sin ticket, contraseñas en texto plano, registros ocultos con
 `visibility = 0` que pasan a `deleted_at`). `schema:update` agrega las claves foráneas e índices y
 **borra las columnas que ya no se usan** (imágenes y `visibility`).
+No saltees `migracion_v2_a_v3.sql`: agrega los timestamps como columnas opcionales, corrige fechas
+nulas o en cero y solo después Doctrine puede hacerlas obligatorias sin fallar con `0000-00-00`.
 
 **Borrados:** todas las entidades tienen `created_at`, `updated_at` y `deleted_at` (Gedmo
 Timestampable / SoftDeleteable). Borrar desde la aplicación o la API solo completa `deleted_at`: el
@@ -127,8 +132,9 @@ Si preferís hacerlo por SQL, ver `sql/crear_usuario.sql`.
 Desarrollo:
 
 ```bash
-php bin/console server:run            # en primer plano, http://127.0.0.1:8000
-php bin/console server:start          # en segundo plano (Linux/macOS); server:stop para frenarlo
+php bin/console s:start               # atajo para server:start en entorno dev
+SYMFONY_ENV=dev php bin/console server:run   # en primer plano, http://127.0.0.1:8000
+SYMFONY_ENV=dev php bin/console server:start # en segundo plano (Linux/macOS); server:stop para frenarlo
 ```
 
 Con XAMPP: copiar `BackendEmma` dentro de `htdocs`; la API queda en

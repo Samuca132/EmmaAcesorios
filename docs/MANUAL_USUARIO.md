@@ -1,7 +1,7 @@
 # Emma Accesorios · Manual de usuario
 
 Este manual explica cómo usar el sistema de gestión de Emma Accesorios: registrar ventas, compras y
-canjes, y mantener al día productos, insumos, clientes y proveedores.
+canjes, pasar mercadería a la venta, y mantener al día productos, insumos, clientes y proveedores.
 
 ## Índice
 
@@ -14,12 +14,13 @@ canjes, y mantener al día productos, insumos, clientes y proveedores.
 7. [Insumos](#7-insumos)
 8. [Compras](#8-compras)
 9. [Canjes](#9-canjes)
-10. [Reportes y Excel](#10-reportes-y-excel)
-11. [Proveedores y ciudades](#11-proveedores-y-ciudades)
-12. [Configuración: usuarios (solo administradores)](#12-configuración-usuarios-solo-administradores)
-13. [Tu cuenta: contraseña y cierre de sesión](#13-tu-cuenta-contraseña-y-cierre-de-sesión)
-14. [Usar el sistema desde el celular](#14-usar-el-sistema-desde-el-celular)
-15. [Preguntas frecuentes y mensajes](#15-preguntas-frecuentes-y-mensajes)
+10. [Pasar a venta](#10-pasar-a-venta)
+11. [Reportes y Excel](#11-reportes-y-excel)
+12. [Proveedores y ciudades](#12-proveedores-y-ciudades)
+13. [Configuración: usuarios e historial (solo administradores)](#13-configuración-usuarios-e-historial-solo-administradores)
+14. [Tu cuenta: contraseña y cierre de sesión](#14-tu-cuenta-contraseña-y-cierre-de-sesión)
+15. [Usar el sistema desde el celular](#15-usar-el-sistema-desde-el-celular)
+16. [Preguntas frecuentes y mensajes](#16-preguntas-frecuentes-y-mensajes)
 
 ---
 
@@ -44,7 +45,12 @@ Al ingresar ves el **Inicio**, con un resumen del mes en curso:
 - **Ganancia del mes**: lo vendido menos el costo de producción de esos productos.
 - **Compras del mes**: lo gastado en insumos.
 - **Clientes** y cantidad de productos en el catálogo.
-- **Stock bajo**: productos que tienen 5 unidades o menos, para reponerlos a tiempo.
+- **Productos para reponer**: los que llegaron a su stock mínimo, los que más faltan primero.
+- **Insumos para comprar**: lo mismo para los insumos.
+- **Gráficos**: cómo vienen las ventas del mes comparadas con el mes anterior, los productos más
+  vendidos y cuánto vendió cada persona. Con **Ver como tabla** ves los números exactos.
+
+No cuentan las operaciones anuladas.
 
 ![Inicio](img/02-inicio.png)
 
@@ -56,15 +62,17 @@ A la izquierda está el **menú** con todas las secciones:
 | Operaciones | Ventas | Registrar ventas y ver tickets |
 | | Compras | Registrar compras de insumos a proveedores |
 | | Canjes | Intercambiar productos por insumos con un proveedor |
+| | Pasar a venta | Convertir insumos en productos listos para vender |
 | Análisis | Reportes | Reportes de ventas, compras y canjes con descarga en Excel |
 | Catálogos | Productos | Lo que vendés |
-| | Insumos | Los materiales con los que fabricás |
+| | Insumos | La mercadería antes de estar a la venta: materiales y artículos para revender |
 | | Clientes | A quién le vendés |
 | | Proveedores | A quién le comprás insumos |
 | | Ciudades | Ciudades de clientes y proveedores |
-| Configuración | Configuración | Crear usuarios. **Solo la ven los administradores** |
+| Configuración | Configuración | Usuarios e historial de cambios. **Solo la ven los administradores** |
 
-Arriba a la derecha está tu nombre: desde ahí cambiás la contraseña o cerrás la sesión.
+Arriba a la derecha está tu nombre: desde ahí cambiás la contraseña o cerrás la sesión. Al lado, el
+botón de la **luna / sol** cambia entre modo claro y **modo oscuro**; el sistema recuerda tu elección.
 
 ## 3. Cómo funcionan los listados
 
@@ -149,32 +157,68 @@ Con los filtros de arriba ves solo las ventas de un **cliente**, que incluyan un
 Tocá una venta para ver el detalle del ticket: productos, cantidades, precios, total y quién la
 registró. Con **Descargar PDF** obtenés el comprobante para imprimir o enviar al cliente.
 
+**Enviar por WhatsApp:** el botón **WhatsApp** del ticket:
+
+- En el **celular** abre *Compartir*: elegí WhatsApp y el contacto, y el PDF va adjunto.
+- En la **computadora** abre WhatsApp Web con el chat del cliente (si tiene teléfono cargado) y un
+  resumen de la compra ya escrito, y descarga el PDF para que lo adjuntes con el clip.
+
 ![Detalle de ticket](img/08-ticket.png)
 
 > El precio de cada producto queda guardado tal como estaba el día de la venta: si después cambiás
 > el precio de un producto, los tickets anteriores no se modifican.
 
+### Anular una venta
+
+Si una venta se cargó mal o el cliente la devolvió:
+
+1. Abrí el ticket (o tocá **⋮ → Anular** en el listado).
+2. Tocá **Anular** y escribí el **motivo** (es obligatorio).
+3. Confirmá.
+
+Los productos **vuelven al stock**. La venta no desaparece: queda **tachada** con la marca *Anulada*,
+quién la anuló, cuándo y por qué, y el PDF sale con el sello **ANULADO**. Ya no cuenta en el inicio, los
+gráficos ni los reportes. Una anulación no se puede deshacer: si fue un error, cargá la venta de nuevo.
+
+Compras, canjes y pases a venta se anulan igual (**⋮ → Anular**). Si lo que entró ya se usó (por
+ejemplo, vendiste los insumos de una compra), el sistema avisa que no alcanza el stock y no anula nada.
+
+> Quién puede anular lo define quien administra el sistema: por ahora puede cualquier usuario. Si no
+> ves la opción, es que tu usuario no tiene permiso.
+
 ## 6. Productos
 
-Son los artículos que vendés. La tabla muestra **stock**, **coste** de producción, **precio** de venta
-y la **ganancia** por unidad (precio − coste).
+Son los artículos que vendés. La tabla muestra **stock**, **mínimo**, **coste** de producción,
+**precio** de venta, la **ganancia** por unidad (precio − coste) y si tiene **composición**.
 
 ![Productos](img/09-productos.png)
 
-- **Nuevo producto**: nombre, coste de producción, precio de venta y stock inicial.
+- **Nuevo producto**: nombre, coste de producción, precio de venta, stock inicial y **stock mínimo**
+  (cuando el stock llega a ese número, aparece en *Productos para reponer*; por defecto 5).
+- **Composición** (menú ⋮): qué insumos lleva **cada unidad** del producto, y un costo adicional
+  opcional (mano de obra, packaging…). Si es un artículo que comprás para revender, poné su mismo
+  artículo de insumos × 1. Es necesaria para poder **pasarlo a venta**.
 - **Editar** (menú ⋮): por ejemplo para actualizar el precio o corregir el stock.
 - **Borrar**: el producto deja de aparecer para vender, pero las ventas anteriores se conservan.
 
 ![Editar producto](img/11-editar-producto.png)
 
-El stock **baja** automáticamente con cada venta y canje.
+El stock **baja** automáticamente con cada venta y canje, y **sube** al pasar a venta. El **coste** se
+recalcula solo con lo que realmente costaron los insumos usados.
+
+Con **Solo bajo mínimo** ves únicamente lo que hay que reponer.
 
 ## 7. Insumos
 
-Son los materiales con los que fabricás (hilos, mostacillas, broches…). Se manejan igual que los
-productos: nombre, precio, stock y, opcionalmente, el **descuento pactado para canjes** (en %).
+Son la mercadería **antes de estar a la venta**: los materiales con los que fabricás (hilos,
+mostacillas, broches…) y los artículos que comprás para revender. Se manejan igual que los productos:
+nombre, precio, stock, **stock mínimo** y, opcionalmente, el **descuento pactado para canjes** (en %).
 
-El stock de un insumo **sube** automáticamente con cada compra y cada canje.
+El stock de un insumo **sube** con cada compra y cada canje, y **baja** al pasar a venta.
+
+La columna **Costo promedio** es lo que te costó en realidad cada unidad: se recalcula sola con cada
+compra (si compraste 10 a $100 y después 10 a $120, el costo pasa a $110). Es el que se usa para
+calcular el coste de los productos. Si un número no te cierra, podés corregirlo en **Editar**.
 
 ## 8. Compras
 
@@ -214,14 +258,30 @@ En el listado, la columna **Ganancia** compara lo que recibiste con lo que entre
 lista y con los descuentos): si es **positiva**, recibiste más valor del que diste; si es **negativa**
 (con signo −), entregaste más valor.
 
-## 10. Reportes y Excel
+## 10. Pasar a venta
+
+Cuando terminás de fabricar productos (o tenés listos para vender artículos que compraste), los
+**pasás a venta**: se descuentan los insumos y se suma el stock de los productos.
+
+1. Tocá **Pasar a venta → Nuevo pase**.
+2. Elegí cada **producto** y la **cantidad** de unidades. Solo aparecen los que tienen composición.
+3. Mientras cargás, el sistema muestra **qué insumos se van a usar**, si alcanzan y cuánto va a costar.
+   Si falta algo, lo marca en rojo y te dice cuánto falta de cada insumo.
+4. Si querés, escribí una **nota** (por ejemplo "tanda de collares de verano").
+5. Tocá **Pasar a venta**.
+
+El coste de cada producto se actualiza con lo que costaron sus insumos. En el listado podés ver el
+detalle de cada pase (ícono del ojo) y **anularlo**: los insumos vuelven y los productos salen del stock
+(si ya se vendieron, no se puede).
+
+## 11. Reportes y Excel
 
 En **Reportes** (menú *Análisis*) podés ver y descargar en Excel el detalle de tus ventas, compras y
 canjes.
 
 ![Reportes](img/18-reportes.png)
 
-1. Elegí la pestaña: **Ventas**, **Compras** o **Canjes**.
+1. Elegí la pestaña: **Ventas**, **Compras**, **Canjes** o **Pases a venta**.
 2. Ajustá los filtros. Por defecto se muestra el mes en curso. Los botones **Este mes**, **Mes
    anterior**, **Este año** y **Sin filtros** cambian el período de un toque. Según el reporte podés
    filtrar además por cliente, producto, ciudad, proveedor, insumo y por quién **registró** la
@@ -239,7 +299,10 @@ canjes.
    - Arriba de cada hoja figuran los filtros usados, la fecha y quién lo generó. Está listo para
      imprimir en hoja A4 apaisada.
 
-## 11. Proveedores y ciudades
+Las operaciones anuladas no se incluyen. Si tildás **Incluir anuladas**, aparecen con la columna
+*Estado* para que las veas, pero los totales siguen sumando solo las vigentes.
+
+## 12. Proveedores y ciudades
 
 - **Proveedores**: nombre, ciudad y teléfono. Si borrás un proveedor, sus compras y canjes anteriores
   siguen apareciendo en el historial.
@@ -248,7 +311,7 @@ canjes.
 
 Conviene cargar las ciudades **antes** que los clientes y proveedores, para poder elegirlas.
 
-## 12. Configuración: usuarios (solo administradores)
+## 13. Configuración: usuarios e historial (solo administradores)
 
 Si tu usuario es **Administrador**, en el menú aparece **Configuración**. Los demás usuarios no la ven
 ni pueden entrar.
@@ -293,7 +356,12 @@ Para cuidar que el sistema no quede sin acceso:
   Administrador.
 - Siempre tiene que quedar al menos un administrador activo.
 
-## 13. Tu cuenta: contraseña y cierre de sesión
+**Historial de cambios:** la pestaña **Historial** muestra quién creó, modificó, borró o anuló cada
+cosa, cuándo, y qué cambió (por ejemplo *Precio: 1.500 → 1.800*). Se puede filtrar por fechas,
+usuario, tipo de registro y acción. En cada catálogo (productos, clientes…) la opción **⋮ → Ver
+historial** muestra solo los cambios de ese registro.
+
+## 14. Tu cuenta: contraseña y cierre de sesión
 
 Tocá tu nombre arriba a la derecha:
 
@@ -310,17 +378,22 @@ para el verano"*).
 Todo lo que registres (ventas, compras y canjes) queda asociado a tu usuario y se ve en la columna
 **Registró**. Por eso cada persona debería tener su propio usuario y no compartir contraseñas.
 
-## 14. Usar el sistema desde el celular
+## 15. Usar el sistema desde el celular
 
 El sistema se adapta a pantallas chicas. El menú se abre con el botón **☰** de arriba a la izquierda.
 Si una tabla tiene muchas columnas, deslizala hacia los costados.
+
+**Instalarlo como app:** en Chrome (Android) tocá el menú **⋮ → Instalar app** o *Agregar a pantalla
+principal*; en el iPhone, en Safari, **Compartir → Agregar a inicio**. Queda un ícono de Emma como
+cualquier otra app y abre más rápido. Necesita internet para trabajar: si se corta, arriba aparece
+*Sin conexión*. Cuando haya una versión nueva del sistema, te ofrece **Recargar**.
 
 <p>
   <img src="img/16-movil-ventas.png" alt="Ventas en el celular" width="260">
   <img src="img/17-movil-menu.png" alt="Menú en el celular" width="260">
 </p>
 
-## 15. Preguntas frecuentes y mensajes
+## 16. Preguntas frecuentes y mensajes
 
 | Mensaje o situación | Qué significa / qué hacer |
 |---|---|
@@ -328,7 +401,7 @@ Si una tabla tiene muchas columnas, deslizala hacia los costados.
 | *La cuenta está bloqueada temporalmente…* | Hubo 5 intentos fallidos. Esperá 15 minutos o pedile al administrador que te genere una contraseña nueva (eso también la desbloquea). |
 | *Demasiados intentos. Esperá unos minutos…* | Hubo muchos intentos fallidos desde esa conexión. Esperá 15 minutos. |
 | *Tu sesión venció. Volvé a ingresar.* | Pasaron 8 horas o el sistema se reinició. Ingresá de nuevo; lo ya guardado no se pierde. |
-| *No hay stock suficiente de "…" (disponible: N)* | Bajá la cantidad o cargá más stock en Productos. No se guardó nada de esa operación. |
+| *No hay stock suficiente de "…" (disponible: N)* | Bajá la cantidad o pasá más unidades a venta. No se guardó nada de esa operación. |
 | *No se puede borrar: hay clientes o proveedores en esta ciudad.* | Primero cambiales la ciudad o borralos. |
 | Borré algo por error | No se perdió: pedile a quien administra el sistema que lo recupere. |
 | No veo **Configuración** en el menú | Solo la ven los usuarios con rol Administrador. |
@@ -339,5 +412,8 @@ Si una tabla tiene muchas columnas, deslizala hacia los costados.
 | El reporte dice *No hay registros para los filtros elegidos* | Revisá las fechas (por defecto es el mes en curso) o tocá **Sin filtros**. |
 | Un campo aparece en rojo | Leé el mensaje debajo del campo (obligatorio, número negativo, etc.). |
 | No encuentro una ciudad al cargar un cliente | Cargala primero en **Ciudades**. |
-| Me equivoqué en una venta | Hoy no hay anulación de ventas desde el sistema: anotá el número de ticket y consultá con quien administra el sistema. |
+| Me equivoqué en una venta (o compra, canje, pase) | Anulala con **⋮ → Anular** y volvé a cargarla bien. Ver *Anular una venta*. |
+| *No se puede anular: no hay stock suficiente de "…"* | Lo que entró con esa operación ya se usó o se vendió. |
+| Un producto no aparece al pasar a venta | Le falta la **composición**: cargala en Productos → ⋮ → Composición. |
+| *Faltan insumos para pasar a venta* | El mensaje dice cuánto falta de cada uno: comprá o bajá la cantidad. |
 | La columna *Registró* muestra "—" | Son operaciones cargadas antes de que el sistema guardara el usuario. |

@@ -60,8 +60,8 @@ class ClienteRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('c')
             ->addSelect('ci')
-            ->addSelect(sprintf('(SELECT COUNT(t1.id) FROM %s t1 WHERE t1.cliente = c) AS compras', Ticket::class))
-            ->addSelect(sprintf('(SELECT COALESCE(SUM(t2.total), 0) FROM %s t2 WHERE t2.cliente = c) AS totalComprado', Ticket::class))
+            ->addSelect(sprintf('(SELECT COUNT(t1.id) FROM %s t1 WHERE t1.cliente = c AND t1.anuladoAt IS NULL) AS compras', Ticket::class))
+            ->addSelect(sprintf('(SELECT COALESCE(SUM(t2.total), 0) FROM %s t2 WHERE t2.cliente = c AND t2.anuladoAt IS NULL) AS totalComprado', Ticket::class))
             ->leftJoin('c.ciudad', 'ci');
     }
 }

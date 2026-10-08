@@ -1,4 +1,4 @@
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, NgTemplateOutlet } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,10 +11,11 @@ import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { NotificacionService } from '../../core/notificacion.service';
 import { catchError, of } from 'rxjs';
+import { GraficosPanel } from './graficos';
 
 @Component({
   selector: 'app-inicio-page',
-  imports: [MatCardModule, MatIconModule, MatButtonModule, MatListModule, MatProgressBarModule, RouterLink, CurrencyPipe],
+  imports: [MatCardModule, MatIconModule, MatButtonModule, MatListModule, MatProgressBarModule, RouterLink, CurrencyPipe, NgTemplateOutlet, GraficosPanel],
   template: `
     <div class="page">
       <header class="page-header">
@@ -61,30 +62,44 @@ import { catchError, of } from 'rxjs';
           </mat-card>
         </section>
 
-        <mat-card appearance="outlined">
-          <mat-card-header>
-            <mat-icon mat-card-avatar class="alerta">warning</mat-icon>
-            <mat-card-title>Stock bajo</mat-card-title>
-            <mat-card-subtitle>Productos con 5 unidades o menos</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            @if (r.stockBajo.length) {
-              <mat-list>
-                @for (p of r.stockBajo; track p.id) {
-                  <mat-list-item>
-                    <span matListItemTitle>{{ p.nombre }}</span>
-                    <span matListItemMeta [class.alerta]="p.stock === 0">{{ p.stock }} u.</span>
-                  </mat-list-item>
-                }
-              </mat-list>
-            } @else {
-              <p class="text-muted">Todo en orden 🎉</p>
-            }
-          </mat-card-content>
-          <mat-card-actions align="end">
-            <a mat-button routerLink="/productos">Ver productos</a>
-          </mat-card-actions>
-        </mat-card>
+        <app-graficos />
+
+        <section class="reponer">
+          <ng-container *ngTemplateOutlet="lista; context: {
+            titulo: 'Productos para reponer', icono: 'inventory_2', items: r.stockBajo, ruta: '/productos', boton: 'Ver productos'
+          }" />
+          <ng-container *ngTemplateOutlet="lista; context: {
+            titulo: 'Insumos para comprar', icono: 'shopping_cart', items: r.insumosBajos, ruta: '/insumos', boton: 'Ver insumos'
+          }" />
+        </section>
+
+        <ng-template #lista let-titulo="titulo" let-icono="icono" let-items="items" let-ruta="ruta" let-boton="boton">
+          <mat-card appearance="outlined">
+            <mat-card-header>
+              <mat-icon mat-card-avatar [class.alerta]="items.length">{{ items.length ? 'warning' : icono }}</mat-icon>
+              <mat-card-title>{{ titulo }}</mat-card-title>
+              <mat-card-subtitle>Stock en su mínimo o por debajo</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              @if (items.length) {
+                <mat-list>
+                  @for (p of items; track p.id) {
+                    <mat-list-item>
+                      <span matListItemTitle>{{ p.nombre }}</span>
+                      <span matListItemLine class="text-muted">mínimo {{ p.stockMinimo }}</span>
+                      <span matListItemMeta [class.alerta]="p.stock === 0">{{ p.stock }} u.</span>
+                    </mat-list-item>
+                  }
+                </mat-list>
+              } @else {
+                <p class="text-muted">Todo en orden 🎉</p>
+              }
+            </mat-card-content>
+            <mat-card-actions align="end">
+              <a mat-button [routerLink]="ruta">{{ boton }}</a>
+            </mat-card-actions>
+          </mat-card>
+        </ng-template>
       } @else {
         <mat-progress-bar mode="indeterminate" />
       }
@@ -98,6 +113,7 @@ import { catchError, of } from 'rxjs';
     .label { font: var(--mat-sys-label-large); color: var(--mat-sys-on-surface-variant); }
     .valor { font: var(--mat-sys-headline-medium); }
     .alerta { color: var(--mat-sys-error); }
+    .reponer { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
   `,
 })
 export class InicioPage {

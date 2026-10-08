@@ -1,0 +1,3 @@
+# Despliegue: credenciales de FTP y sitio armado
+/deploy/deploy.env
+/deploy/build/

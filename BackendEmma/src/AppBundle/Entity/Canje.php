@@ -15,10 +15,11 @@ use Symfony\Component\Validator\Constraints as Assert;
  * @ORM\Table(name="canjes")
  * @Gedmo\SoftDeleteable(fieldName="deletedAt", timeAware=false, hardDelete=false)
  */
-class Canje
+class Canje implements Anulable
 {
     use TimestampableEntity;
     use SoftDeleteableEntity;
+    use AnulableTrait;
 
     /**
      * @ORM\Id
@@ -81,6 +82,15 @@ class Canje
      * @ORM\JoinColumn(name="IDUsuario", referencedColumnName="IDUsuario", nullable=true)
      */
     private $usuario;
+
+    /**
+     * Lo que costaron los insumos recibidos: el coste de los productos
+     * entregados. Se usa para el costo promedio del insumo y para revertirlo
+     * si se anula. Null en canjes anteriores a este cálculo.
+     *
+     * @ORM\Column(name="costo_insumos", type="decimal", precision=12, scale=2, nullable=true)
+     */
+    private $costoInsumos;
 
     public function __construct()
     {
@@ -166,6 +176,26 @@ class Canje
      * Ganancia = valor de los insumos recibidos - valor de los productos entregados,
      * aplicando los descuentos (en %) acordados.
      */
+    /**
+     * Mueve el stock: sale el producto y entra el insumo al costo de lo entregado.
+     *
+     * @throws \DomainException si no hay stock del producto
+     */
+    public function aplicarStock()
+    {
+        $this->producto->descontarStock($this->cantidadProducto);
+        $this->costoInsumos = (string) round($this->producto->getCoste() * $this->cantidadProducto, 2);
+        $this->insumo->registrarEntrada($this->cantidadInsumo, $this->getCostoUnitarioInsumo());
+
+        return $this;
+    }
+
+    /** @return float|null */
+    public function getCostoUnitarioInsumo()
+    {
+        return $this->costoInsumos === null ? null : (float) $this->costoInsumos / $this->cantidadInsumo;
+    }
+
     public function calcularProfit($descuentoProducto = 0, $descuentoInsumo = 0)
     {
         $valorProductos = $this->producto->getPrecio() * (1 - $descuentoProducto / 100) * $this->cantidadProducto;
@@ -177,7 +207,7 @@ class Canje
 
     public function toArray()
     {
-        return [
+        return array_merge([
             'id' => $this->id,
             'fecha' => $this->fecha->format('Y-m-d'),
             'proveedorId' => $this->proveedor->getId(),
@@ -190,6 +220,6 @@ class Canje
             'cantidadInsumo' => (int) $this->cantidadInsumo,
             'profit' => (float) $this->profit,
             'usuario' => $this->usuario ? $this->usuario->getNombre() : null,
-        ];
+        ], $this->datosAnulacion());
     }
 }

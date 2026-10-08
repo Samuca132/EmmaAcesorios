@@ -2,6 +2,10 @@
 
 namespace AppBundle\Controller;
 
+use AppBundle\Entity\Anulable;
+use AppBundle\Repository\IncluyeBorrados;
+use AppBundle\Security\AnulacionVoter;
+use AppBundle\Service\Anulaciones;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -102,6 +106,52 @@ abstract class ApiController extends AbstractController
         }
 
         return is_string($data[$campo]) ? trim($data[$campo]) : $data[$campo];
+    }
+
+    /**
+     * Datos de una operación + si el usuario actual la puede anular.
+     */
+    protected function conPermisos(Anulable $operacion, array $datos)
+    {
+        return $datos + ['puedeAnular' => $this->isGranted(AnulacionVoter::ANULAR, $operacion)];
+    }
+
+    /**
+     * POST .../{id}/anular  {"motivo": "..."}
+     *
+     * @param callable $buscar    fn() => Anulable|null
+     * @param callable $responder fn(Anulable) => array con los datos actualizados
+     */
+    protected function anularOperacion(Request $request, Anulaciones $anulaciones, callable $buscar, callable $responder)
+    {
+        $data = $this->getJson($request);
+        if ($errores = $this->validar($data, [
+            'motivo' => array_merge(self::texto(255), [new Assert\Length(['min' => 3, 'minMessage' => 'Contá brevemente el motivo.'])]),
+        ])) {
+            return $errores;
+        }
+
+        // Las operaciones viejas pueden referirse a clientes, productos, etc. ya borrados
+        return IncluyeBorrados::ejecutar($this->em, function () use ($data, $anulaciones, $buscar, $responder) {
+            $operacion = $buscar();
+            if (!$operacion) {
+                throw $this->noEncontrado('Operación');
+            }
+            if ($operacion->estaAnulado()) {
+                return $this->error('La operación ya estaba anulada.', 409);
+            }
+            if (!$this->isGranted(AnulacionVoter::ANULAR, $operacion)) {
+                return $this->error('No tenés permiso para anular esta operación.', 403);
+            }
+
+            try {
+                $anulaciones->anular($operacion, $this->getUser(), trim($data['motivo']));
+            } catch (\DomainException $e) {
+                return $this->error('No se puede anular: '.$e->getMessage(), 409);
+            }
+
+            return new JsonResponse($this->conPermisos($operacion, $responder($operacion)));
+        });
     }
 
     protected function noEncontrado($recurso = 'Registro')

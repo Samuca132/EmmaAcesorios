@@ -1,0 +1,43 @@
+# Emma Accesorios en un solo dominio (InfinityFree / hosting compartido):
+#   /            → frontend Angular (index.html y sus archivos)
+#   /api/...     → backend Symfony (backend/web/app.php)
+#   /backend/... → prohibido desde la web (código, .env, credenciales)
+#
+# Generado por deploy/deploy.sh: no editar en el servidor.
+
+Options -Indexes
+DirectoryIndex index.html
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Nadie puede pedir directamente archivos del backend
+    RewriteCond %{THE_REQUEST} \s/+backend[/\s?] [NC]
+    RewriteRule ^ - [F]
+
+    # El header Authorization tiene que llegar a PHP (algunos hostings lo descartan)
+    RewriteCond %{HTTP:Authorization} .+
+    RewriteRule ^ - [E=HTTP_AUTHORIZATION:%0]
+
+    # API → Symfony
+    RewriteRule ^api(/.*)?$ backend/web/app.php [L,QSA]
+
+    # Archivos reales del frontend (js, css, imágenes)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # Cualquier otra ruta (/ventas, /clientes/3…) la resuelve Angular
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# index.html y los archivos de la app instalable (service worker) nunca se
+# guardan en caché del navegador: así cada deploy llega al instante.
+# Los .js y .css llevan un hash en el nombre, pueden cachearse para siempre.
+<IfModule mod_headers.c>
+    <FilesMatch "^(index\.html|ngsw\.json|ngsw-worker\.js|safety-worker\.js|manifest\.webmanifest)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+    <FilesMatch "\.[0-9A-Z]{8}\.(js|css)$|^chunk-.*\.js$|^main-.*\.js$|^polyfills-.*\.js$|^styles-.*\.css$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>

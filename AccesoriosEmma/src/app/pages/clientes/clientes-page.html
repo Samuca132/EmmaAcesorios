@@ -3,5 +3,6 @@
     <button mat-flat-button (click)="nuevo()"><mat-icon>add</mat-icon>Nuevo cliente</button>
   </app-page-header>
   <app-data-table [columnas]="columnas" [datos]="datos()" [cargando]="cargando()" [conVer]="true" textoVer="Ver perfil" iconoVer="person" (ver)="verPerfil($event)"
-                  (editar)="editar($event)" (borrar)="borrar($event)" />
+                  (editar)="editar($event)" (borrar)="borrar($event)"
+                  [acciones]="acciones()" (accion)="accion($event)" />
 </div>

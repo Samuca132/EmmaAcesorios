@@ -85,6 +85,17 @@ class Venta
         $this->fecha = new \DateTime('today');
     }
 
+    /** @return Producto */
+    public function getProducto()
+    {
+        return $this->producto;
+    }
+
+    public function getCantidad()
+    {
+        return (int) $this->cantidad;
+    }
+
     public function toArray()
     {
         return [

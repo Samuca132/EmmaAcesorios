@@ -28,8 +28,11 @@ export interface Columna<T> {
   clave: keyof T & string;
   titulo: string;
   tipo?: TipoColumna;
-  /** Resalta en rojo los valores menores o iguales a este número (p. ej. stock bajo). */
-  alertaSi?: number;
+  /**
+   * Resalta el valor en rojo: si es un número, cuando el valor es menor o igual;
+   * si es una función, cuando devuelve true (p. ej. stock por debajo del mínimo de esa fila).
+   */
+  alertaSi?: number | ((fila: T) => boolean);
 }
 
 /**
@@ -68,7 +71,7 @@ export interface Columna<T> {
             <ng-container [matColumnDef]="col.clave">
               <th mat-header-cell *matHeaderCellDef mat-sort-header [class.num]="esNumerica(col)">{{ col.titulo }}</th>
               <td mat-cell *matCellDef="let fila" [class.num]="esNumerica(col)"
-                  [class.alerta]="col.alertaSi !== undefined && fila[col.clave] <= col.alertaSi">
+                  [class.alerta]="enAlerta(col, fila)">
                 @if (fila[col.clave] === null || fila[col.clave] === undefined || fila[col.clave] === '') {
                   —
                 } @else {
@@ -116,6 +119,7 @@ export interface Columna<T> {
 
           <tr mat-header-row *matHeaderRowDef="claves(); sticky: true"></tr>
           <tr mat-row *matRowDef="let fila; columns: claves()" [class.clickable]="conVer()"
+              [class.atenuada]="atenuada()?.(fila)"
               (click)="conVer() && ver.emit(fila)"></tr>
           <tr class="mat-row" *matNoDataRow>
             <td class="vacio" [attr.colspan]="claves().length">
@@ -142,9 +146,12 @@ export interface Columna<T> {
     table { width: 100%; }
     .num { text-align: right; }
     th.num ::ng-deep .mat-sort-header-container { justify-content: flex-end; }
-    .acciones { width: 1%; white-space: nowrap; text-align: right; }
+    /* Material pone overflow:hidden + text-overflow:ellipsis en las celdas: con dos botones
+       (ver + menú) un desborde de fracciones de píxel convertía el segundo en "…". */
+    .acciones { width: 1%; white-space: nowrap; text-align: right; overflow: visible; text-overflow: clip; }
     .alerta { color: var(--mat-sys-error); font-weight: 500; }
     .clickable { cursor: pointer; }
+    .atenuada td:not(.acciones) { color: var(--mat-sys-on-surface-variant); text-decoration: line-through; }
     .clickable:hover { background: var(--mat-sys-surface-container-low); }
     .vacio { padding: 32px 16px; text-align: center; color: var(--mat-sys-on-surface-variant); }
   `,
@@ -164,6 +171,9 @@ export class DataTable<T> implements AfterViewInit {
   readonly acciones = input<AccionFila<T>[]>([]);
   /** Si se indica, el Borrar solo aparece en las filas donde devuelve true. */
   readonly borrable = input<((fila: T) => boolean) | null>(null);
+
+  /** Filas que se muestran tachadas (p. ej. operaciones anuladas). */
+  readonly atenuada = input<((fila: T) => boolean) | null>(null);
 
   readonly borrar = output<T>();
   readonly ver = output<T>();
@@ -191,6 +201,12 @@ export class DataTable<T> implements AfterViewInit {
   ngAfterViewInit(): void {
     this.dataSource.sort = this.sort();
     this.dataSource.paginator = this.paginator();
+  }
+
+  enAlerta(col: Columna<T>, fila: T): boolean {
+    if (col.alertaSi === undefined) return false;
+    if (typeof col.alertaSi === 'function') return col.alertaSi(fila);
+    return (fila[col.clave] as number) <= col.alertaSi;
   }
 
   filtrar(valor: string): void {

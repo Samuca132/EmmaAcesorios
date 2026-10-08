@@ -54,6 +54,7 @@ class CompraRepository extends ServiceEntityRepository
         return (float) $this->createQueryBuilder('c')
             ->select('COALESCE(SUM(c.costo), 0)')
             ->where('c.fecha >= :desde')->setParameter('desde', $desde)
+            ->andWhere('c.anuladoAt IS NULL')
             ->getQuery()->getSingleScalarResult();
     }
 }

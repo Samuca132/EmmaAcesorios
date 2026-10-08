@@ -4,7 +4,8 @@ import { Observable, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   Canje, Ciudad, Cliente, Compra, Dashboard, Insumo, Producto, Proveedor, Provincia, Reporte, Ticket,
-  TipoReporte, UsuarioResumen, NuevoUsuario, Rol, UsuarioAdmin,
+  TipoReporte, UsuarioResumen, NuevoUsuario, Rol, UsuarioAdmin, PaginaAuditoria, Composicion, PaseVenta,
+  SimulacionPase, Graficos,
 } from './models';
 
 /**
@@ -64,6 +65,10 @@ export class ApiService {
     return this.http.get<Dashboard>(`${this.url}/dashboard`);
   }
 
+  graficos(): Observable<Graficos> {
+    return this.http.get<Graficos>(`${this.url}/dashboard/graficos`);
+  }
+
   // ---------- Operaciones ----------
   compras(filtros: Filtros = {}): Observable<Compra[]> {
     return this.http.get<Compra[]>(`${this.url}/compras`, { params: this.params(filtros) });
@@ -104,7 +109,44 @@ export class ApiService {
     return this.http.post<Ticket>(`${this.url}/ventas`, datos);
   }
 
+  // ---------- Composición y pases a venta ----------
+  composicion(productoId: number): Observable<Composicion> {
+    return this.http.get<Composicion>(`${this.url}/productos/${productoId}/composicion`);
+  }
+
+  guardarComposicion(
+    productoId: number,
+    datos: { costoAdicional: number; componentes: { insumoId: number; cantidad: number }[] },
+  ): Observable<Composicion> {
+    return this.http.put<Composicion>(`${this.url}/productos/${productoId}/composicion`, datos);
+  }
+
+  pasesVenta(): Observable<PaseVenta[]> {
+    return this.http.get<PaseVenta[]>(`${this.url}/pases-venta`);
+  }
+
+  paseVenta(id: number): Observable<PaseVenta> {
+    return this.http.get<PaseVenta>(`${this.url}/pases-venta/${id}`);
+  }
+
+  simularPase(items: { productoId: number; cantidad: number }[]): Observable<SimulacionPase> {
+    return this.http.post<SimulacionPase>(`${this.url}/pases-venta/simular`, { items });
+  }
+
+  registrarPase(datos: { items: { productoId: number; cantidad: number }[]; nota: string | null }): Observable<PaseVenta> {
+    return this.http.post<PaseVenta>(`${this.url}/pases-venta`, datos);
+  }
+
+  /** Anula una operación: revierte el stock y la deja marcada (no la borra). */
+  anular<T>(tipo: 'ventas' | 'compras' | 'canjes' | 'pases-venta', id: number, motivo: string): Observable<T> {
+    return this.http.post<T>(`${this.url}/${tipo}/${id}/anular`, { motivo });
+  }
+
   // ---------- Configuración (solo administradores) ----------
+  auditoria(filtros: Filtros = {}): Observable<PaginaAuditoria> {
+    return this.http.get<PaginaAuditoria>(`${this.url}/admin/auditoria`, { params: this.params(filtros) });
+  }
+
   adminUsuarios(): Observable<UsuarioAdmin[]> {
     return this.http.get<UsuarioAdmin[]>(`${this.url}/admin/usuarios`);
   }

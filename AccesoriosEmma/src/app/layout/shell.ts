@@ -12,7 +12,9 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { map } from 'rxjs';
 import { AuthService } from '../core/auth.service';
+import { ConexionService } from '../core/conexion.service';
 import { NotificacionService } from '../core/notificacion.service';
+import { TemaService } from '../core/tema.service';
 import { CambiarPasswordDialog } from './cambiar-password-dialog';
 
 interface ItemMenu {
@@ -55,6 +57,11 @@ interface ItemMenu {
             <button mat-icon-button aria-label="Abrir menú" (click)="drawer.toggle()"><mat-icon>menu</mat-icon></button>
           }
           <span class="spacer"></span>
+          <button mat-icon-button (click)="tema.alternar()"
+                  [attr.aria-label]="tema.oscuro() ? 'Activar modo claro' : 'Activar modo oscuro'"
+                  [title]="tema.oscuro() ? 'Modo claro' : 'Modo oscuro'">
+            <mat-icon>{{ tema.oscuro() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          </button>
           <button mat-button [matMenuTriggerFor]="menuUsuario">
             <mat-icon>account_circle</mat-icon>{{ auth.usuario()?.nombre }}
           </button>
@@ -65,6 +72,12 @@ interface ItemMenu {
             <button mat-menu-item (click)="auth.logout()"><mat-icon>logout</mat-icon>Cerrar sesión</button>
           </mat-menu>
         </mat-toolbar>
+        @if (!conexion.enLinea()) {
+          <div class="sin-conexion" role="alert">
+            <mat-icon>cloud_off</mat-icon>
+            Sin conexión a internet. Podés mirar lo que ya estaba abierto, pero no registrar operaciones hasta que vuelva.
+          </div>
+        }
         <router-outlet />
       </mat-sidenav-content>
     </mat-sidenav-container>
@@ -79,10 +92,17 @@ interface ItemMenu {
       border-bottom: 1px solid var(--mat-sys-outline-variant);
     }
     .usuario-email { padding: 8px 16px; font: var(--mat-sys-body-small); }
+    .sin-conexion {
+      display: flex; align-items: center; gap: 8px; padding: 8px 16px;
+      background: var(--mat-sys-error-container); color: var(--mat-sys-on-error-container);
+      font: var(--mat-sys-body-medium);
+    }
   `,
 })
 export class Shell {
   readonly auth = inject(AuthService);
+  readonly tema = inject(TemaService);
+  readonly conexion = inject(ConexionService);
   private readonly dialog = inject(MatDialog);
   private readonly notificacion = inject(NotificacionService);
 
@@ -102,6 +122,7 @@ export class Shell {
         { ruta: '/ventas', texto: 'Ventas', icono: 'point_of_sale' },
         { ruta: '/compras', texto: 'Compras', icono: 'shopping_cart' },
         { ruta: '/canjes', texto: 'Canjes', icono: 'swap_horiz' },
+        { ruta: '/pases-venta', texto: 'Pasar a venta', icono: 'move_to_inbox' },
       ],
     },
     {

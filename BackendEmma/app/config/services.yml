@@ -7,6 +7,7 @@ services:
             $jwtSecret: '%env(JWT_SECRET)%'
             $jwtTtl: '%env(int:JWT_TTL)%'
             $corsAllowOrigin: '%env(CORS_ALLOW_ORIGIN)%'
+            $anulacionPermitida: '%env(ANULACION_PERMITIDA)%'
 
     AppBundle\:
         resource: '../../src/AppBundle/*'
@@ -16,3 +17,7 @@ services:
         resource: '../../src/AppBundle/Controller'
         public: true
         tags: ['controller.service_arguments']
+
+    # Historial de cambios (tabla auditoria)
+    AppBundle\Auditoria\AuditoriaSubscriber:
+        tags: [doctrine.event_subscriber]

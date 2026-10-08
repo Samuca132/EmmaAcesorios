@@ -15,10 +15,11 @@ use Gedmo\Timestampable\Traits\TimestampableEntity;
  * @ORM\Table(name="ticket")
  * @Gedmo\SoftDeleteable(fieldName="deletedAt", timeAware=false, hardDelete=false)
  */
-class Ticket
+class Ticket implements Anulable
 {
     use TimestampableEntity;
     use SoftDeleteableEntity;
+    use AnulableTrait;
 
     /**
      * @ORM\Id
@@ -124,11 +125,12 @@ class Ticket
             'fecha' => $this->fecha->format('Y-m-d H:i:s'),
             'clienteId' => $this->cliente->getId(),
             'cliente' => $this->cliente->getNombre(),
+            'clienteTelefono' => $this->cliente->getTelefono() ?: null,
             'ciudad' => $ciudad ? $ciudad->getNombre() : null,
             'cantidadProductos' => (int) $this->cantidadProductos,
             'total' => (float) $this->total,
             'usuario' => $this->usuario ? $this->usuario->getNombre() : null,
-        ];
+        ] + $this->datosAnulacion();
 
         if ($conItems) {
             $datos['items'] = array_map(function (Venta $v) {

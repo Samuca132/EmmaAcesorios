@@ -41,12 +41,35 @@ class Insumo
     private $stock = 0;
 
     /**
+     * Con el stock en este valor o menos, aparece en "para reponer" del panel.
+     *
+     * @ORM\Column(name="stock_minimo", type="integer", options={"default": 5})
+     * @Assert\NotNull(message="Este campo es obligatorio.")
+     * @Assert\Type(type="integer", message="Debe ser un número entero.")
+     * @Assert\GreaterThanOrEqual(0)
+     */
+    private $stockMinimo = 5;
+
+    /**
      * @ORM\Column(name="precio", type="decimal", precision=12, scale=2, options={"default": 0})
      * @Assert\NotNull(message="Este campo es obligatorio.")
      * @Assert\Type(type="numeric", message="Debe ser un número.")
      * @Assert\GreaterThanOrEqual(0)
      */
     private $precio = '0';
+
+    /**
+     * Lo que realmente costó cada unidad en stock (promedio ponderado de las
+     * entradas por compras y canjes). Es la base del coste de los productos al
+     * pasarlos a venta. El "precio" es otra cosa: el valor de lista que se
+     * usa para valuar los canjes.
+     *
+     * @ORM\Column(name="costo_promedio", type="decimal", precision=14, scale=4, options={"default": 0})
+     * @Assert\NotNull(message="Este campo es obligatorio.")
+     * @Assert\Type(type="numeric", message="Debe ser un número.")
+     * @Assert\GreaterThanOrEqual(0)
+     */
+    private $costoPromedio = '0';
 
     /**
      * Porcentaje de descuento pactado para canjes.
@@ -93,6 +116,78 @@ class Insumo
         return $this;
     }
 
+    /**
+     * @throws \DomainException si no hay stock suficiente
+     */
+    public function descontarStock($cantidad)
+    {
+        if ($cantidad > $this->stock) {
+            throw new \DomainException(sprintf('No hay stock suficiente del insumo "%s" (disponible: %d).', $this->nombre, $this->stock));
+        }
+        $this->stock -= $cantidad;
+
+        return $this;
+    }
+
+    public function getStockMinimo()
+    {
+        return $this->stockMinimo;
+    }
+
+    public function setStockMinimo($stockMinimo)
+    {
+        $this->stockMinimo = $stockMinimo;
+
+        return $this;
+    }
+
+    public function estaBajoMinimo()
+    {
+        return $this->stock <= $this->stockMinimo;
+    }
+
+    public function getCostoPromedio()
+    {
+        return (float) $this->costoPromedio;
+    }
+
+    public function setCostoPromedio($costo)
+    {
+        $this->costoPromedio = $costo;
+
+        return $this;
+    }
+
+    /**
+     * Entrada de stock (compra, canje, anulación de un pase a venta) a un costo
+     * unitario: recalcula el costo promedio ponderado.
+     */
+    public function registrarEntrada($cantidad, $costoUnitario)
+    {
+        $this->costoPromedio = (string) CostoPromedio::conEntrada($this->stock, $this->getCostoPromedio(), $cantidad, $costoUnitario);
+        $this->stock += $cantidad;
+
+        return $this;
+    }
+
+    /**
+     * Deshace una entrada (al anular una compra o un canje).
+     *
+     * @param float|null $costoUnitario null si no se conoce (registros viejos): el promedio no cambia
+     *
+     * @throws \DomainException si el stock ya se usó
+     */
+    public function revertirEntrada($cantidad, $costoUnitario)
+    {
+        $stockAntes = $this->stock;
+        $this->descontarStock($cantidad);
+        if ($costoUnitario !== null) {
+            $this->costoPromedio = (string) CostoPromedio::sinEntrada($stockAntes, $this->getCostoPromedio(), $cantidad, $costoUnitario);
+        }
+
+        return $this;
+    }
+
     public function getPrecio()
     {
         return (float) $this->precio;
@@ -123,7 +218,10 @@ class Insumo
             'id' => $this->id,
             'nombre' => $this->nombre,
             'stock' => (int) $this->stock,
+            'stockMinimo' => (int) $this->stockMinimo,
+            'bajoMinimo' => $this->estaBajoMinimo(),
             'precio' => $this->getPrecio(),
+            'costoPromedio' => round($this->getCostoPromedio(), 2),
             'descuentoCanje' => (int) $this->descuentoCanje,
         ];
     }

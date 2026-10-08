@@ -9,6 +9,32 @@ set_time_limit(0);
 
 require __DIR__.'/../app/autoload.php';
 
+if (isset($argv[1]) && $argv[1] === 's:start') {
+    $argv[1] = 'server:start';
+    $_SERVER['argv'][1] = 'server:start';
+
+    $hasEnvironment = false;
+    $environment = 'dev';
+    for ($index = 2; $index < count($argv); ++$index) {
+        $argument = $argv[$index];
+        if ($argument === '--env' || $argument === '-e' || strpos($argument, '--env=') === 0) {
+            $hasEnvironment = true;
+            $environment = strpos($argument, '--env=') === 0
+                ? substr($argument, strlen('--env='))
+                : ($argv[$index + 1] ?? 'dev');
+        }
+    }
+
+    if (!$hasEnvironment) {
+        $argv[] = '--env=dev';
+        $_SERVER['argv'][] = '--env=dev';
+    }
+
+    putenv('SYMFONY_ENV='.$environment);
+    $_ENV['SYMFONY_ENV'] = $environment;
+    $_SERVER['SYMFONY_ENV'] = $environment;
+}
+
 $input = new ArgvInput();
 $env = $input->getParameterOption(['--env', '-e'], getenv('SYMFONY_ENV') ?: 'dev', true);
 $debug = getenv('SYMFONY_DEBUG') !== '0' && !$input->hasParameterOption('--no-debug', true) && $env !== 'prod';

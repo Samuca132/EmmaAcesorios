@@ -2,6 +2,11 @@
   <app-page-header titulo="Insumos" subtitulo="Materiales usados para fabricar los productos.">
     <button mat-flat-button (click)="nuevo()"><mat-icon>add</mat-icon>Nuevo insumo</button>
   </app-page-header>
-  <app-data-table [columnas]="columnas" [datos]="datos()" [cargando]="cargando()"
-                  (editar)="editar($event)" (borrar)="borrar($event)" />
+  <app-data-table [columnas]="columnas" [datos]="visibles()" [cargando]="cargando()"
+                  (editar)="editar($event)" (borrar)="borrar($event)"
+                  [acciones]="acciones()" (accion)="accion($event)">
+    <mat-checkbox [checked]="soloBajoMinimo()" (change)="soloBajoMinimo.set($event.checked)">
+      Solo bajo mínimo ({{ cantidadBajoMinimo() }})
+    </mat-checkbox>
+  </app-data-table>
 </div>

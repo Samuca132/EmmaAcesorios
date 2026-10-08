@@ -11,6 +11,11 @@
             "app/AppKernel.php"
         ]
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "require": {
         "php": ">=7.1.3",
         "ext-json": "*",
@@ -37,5 +42,8 @@
         "post-install-cmd": [
             "@php bin/console cache:clear --no-warmup"
         ]
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6"
     }
 }

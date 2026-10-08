@@ -7,6 +7,8 @@ parameters:
     env(JWT_SECRET): ''
     env(JWT_TTL): '28800'
     env(CORS_ALLOW_ORIGIN): '^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$'
+    # Quién puede anular ventas, compras y canjes: todos | admin | propias_hoy (ver AnulacionVoter)
+    env(ANULACION_PERMITIDA): 'todos'
     locale: es
 
 framework:

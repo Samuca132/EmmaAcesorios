@@ -12,7 +12,7 @@ import { erroresDeCampos, mensajeDeError } from '../core/notificacion.service';
 export interface CampoFormulario {
   clave: string;
   etiqueta: string;
-  tipo: 'texto' | 'numero' | 'entero' | 'select' | 'fecha' | 'telefono';
+  tipo: 'texto' | 'textoLargo' | 'numero' | 'entero' | 'select' | 'fecha' | 'telefono';
   requerido?: boolean;
   min?: number;
   max?: number;
@@ -27,6 +27,8 @@ export interface CampoFormulario {
 
 export interface FormDialogData<T> {
   titulo: string;
+  /** Texto explicativo arriba de los campos. */
+  mensaje?: string;
   campos: CampoFormulario[];
   valores?: Partial<Record<string, unknown>>;
   textoGuardar?: string;
@@ -48,6 +50,9 @@ export interface FormDialogData<T> {
     <h2 mat-dialog-title>{{ data.titulo }}</h2>
     <form [formGroup]="form" (ngSubmit)="enviar()">
       <mat-dialog-content>
+        @if (data.mensaje) {
+          <p class="mensaje">{{ data.mensaje }}</p>
+        }
         <div class="form-grid">
           @for (campo of data.campos; track campo.clave) {
             <mat-form-field appearance="outline" [class.ancho]="campo.ancho">
@@ -71,6 +76,9 @@ export interface FormDialogData<T> {
                 }
                 @case ('fecha') {
                   <input matInput type="date" [formControlName]="campo.clave" />
+                }
+                @case ('textoLargo') {
+                  <textarea matInput rows="3" [formControlName]="campo.clave" [attr.maxlength]="campo.maxLength ?? null"></textarea>
                 }
                 @case ('telefono') {
                   <input matInput type="tel" autocomplete="off" [formControlName]="campo.clave" />
@@ -110,6 +118,7 @@ export interface FormDialogData<T> {
   `,
   styles: `
     .ancho { grid-column: 1 / -1; }
+    .mensaje { margin-top: 0; color: var(--mat-sys-on-surface-variant); }
     .error-general { color: var(--mat-sys-error); margin: 0; }
     mat-spinner { display: inline-block; }
   `,

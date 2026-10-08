@@ -15,10 +15,11 @@ use Symfony\Component\Validator\Constraints as Assert;
  * @ORM\Table(name="compras")
  * @Gedmo\SoftDeleteable(fieldName="deletedAt", timeAware=false, hardDelete=false)
  */
-class Compra
+class Compra implements Anulable
 {
     use TimestampableEntity;
     use SoftDeleteableEntity;
+    use AnulableTrait;
 
     /**
      * @ORM\Id
@@ -132,6 +133,11 @@ class Compra
     }
 
     /** @return Usuario|null */
+    public function getCostoUnitario()
+    {
+        return (float) $this->costo / $this->cantidad;
+    }
+
     public function getUsuario()
     {
         return $this->usuario;
@@ -146,7 +152,7 @@ class Compra
 
     public function toArray()
     {
-        return [
+        return array_merge([
             'id' => $this->id,
             'fecha' => $this->fecha->format('Y-m-d'),
             'proveedorId' => $this->proveedor->getId(),
@@ -156,6 +162,6 @@ class Compra
             'cantidad' => (int) $this->cantidad,
             'costo' => (float) $this->costo,
             'usuario' => $this->usuario ? $this->usuario->getNombre() : null,
-        ];
+        ], $this->datosAnulacion());
     }
 }

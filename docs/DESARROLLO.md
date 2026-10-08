@@ -15,9 +15,10 @@ Guía para desarrollar, mantener y desplegar el sistema. Para el uso diario de l
 8. [API REST](#8-api-rest)
 9. [Procesos de negocio](#9-procesos-de-negocio)
 10. [Frontend (Angular 20 + Material)](#10-frontend-angular-20--material)
-11. [Recetas: cómo agregar cosas](#11-recetas-cómo-agregar-cosas)
-12. [Despliegue en producción](#12-despliegue-en-producción)
-13. [Deuda técnica y próximos pasos](#13-deuda-técnica-y-próximos-pasos)
+11. [Pruebas automáticas](#11-pruebas-automáticas)
+12. [Recetas: cómo agregar cosas](#12-recetas-cómo-agregar-cosas)
+13. [Despliegue en producción](#13-despliegue-en-producción)
+14. [Deuda técnica y próximos pasos](#14-deuda-técnica-y-próximos-pasos)
 
 ---
 
@@ -63,6 +64,7 @@ EmmaAcesorios/
 | | jsPDF (tickets en PDF) | 4 |
 | Reportes | phpoffice/phpspreadsheet (archivos .xlsx) | 1.30 |
 | | TypeScript | 5.9 |
+| Pruebas | PHPUnit (backend) / Vitest + jsdom (frontend) | 9.6 / 3 |
 
 `composer.json` fija la plataforma en PHP 7.4.33 (`config.platform.php`) para que Composer resuelva
 siempre las mismas versiones, sin importar el PHP de la máquina.
@@ -90,6 +92,8 @@ Variables de entorno (`BackendEmma/.env`, **nunca** se sube al repo):
 | `JWT_SECRET` | Clave para firmar los tokens (≥ 32 caracteres aleatorios) | `php -r "echo bin2hex(random_bytes(32));"` |
 | `JWT_TTL` | Duración del token en segundos | `28800` (8 h) |
 | `CORS_ALLOW_ORIGIN` | Regex de orígenes que pueden llamar a la API | `^https?://(localhost\|127\.0\.0\.1)(:[0-9]+)?$` |
+| `APP_TIMEZONE` | Zona horaria de las fechas que se guardan | `America/Argentina/Buenos_Aires` |
+| `ANULACION_PERMITIDA` | Quién puede anular operaciones: `todos`, `admin` o `propias_hoy` (ver sección 9) | `todos` |
 
 Si `JWT_SECRET` falta o es corto, la API responde error en todas las rutas protegidas (falla cerrada
 a propósito).
@@ -121,6 +125,8 @@ del backend, cambialo en `proxy.conf.json` y reiniciá `npm start`.
 | `php bin/console cache:clear` | Limpia la caché (necesario en `prod` después de cambiar config) |
 | `php bin/console server:start` / `server:stop` | Servidor de desarrollo en segundo plano (Linux/macOS) |
 | `npx ng build` | Compila el frontend para producción en `dist/` |
+| `vendor/bin/phpunit` (en `BackendEmma`) | Pruebas del backend (ver sección 11) |
+| `npm test` (en `AccesoriosEmma`) | Pruebas del frontend |
 
 ## 4. Backend (Symfony 3.4)
 
@@ -227,6 +233,14 @@ Proveedor 1 ──── n Compra n ──── 1 Insumo
    1 ──── n Canje n ──── 1 Producto
                ├── n ──── 1 Insumo
                └── n ──── 1 Usuario
+
+Producto 1 ──── n Componente n ──── 1 Insumo          (composición: qué lleva cada unidad)
+
+PaseVenta 1 ──── n PaseVentaItem n ──── 1 Producto    (lo que pasó a venta)
+    │     1 ──── n PaseVentaConsumo n ── 1 Insumo     (lo que se descontó)
+    └── n ──── 1 Usuario
+
+Auditoria n ──── 1 Usuario                            (historial de cambios)
 ```
 
 (`1 ── n` = uno a muchos. Por ejemplo, un cliente tiene muchos tickets y cada ticket es de un cliente.)
@@ -241,15 +255,22 @@ Además de los campos de la tabla, **todas** las entidades tienen `created_at`, 
 | **Ciudad** (`ciudad`) | `nombre`→`NombreCiudad`, `provincia`→`Provincia` (int) | — | Provincias en la constante `Ciudad::PROVINCIAS` |
 | **Cliente** (`cliente`) | `nombre`→`nombreCliente`, `telefono`→`telefonoCliente` | `ciudad` → Ciudad (nullable) | |
 | **Proveedor** (`proveedores`) | `nombre`, `telefono`→`TelefonoProveedor` | `ciudad` → Ciudad (nullable) | |
-| **Producto** (`producto`) | `nombre`→`NombreProducto`, `stock`→`stockProducto`, `precio`→`PrecioProducto`, `coste`→`costeProduccion` | — | `descontarStock()` lanza `DomainException` si no alcanza |
-| **Insumo** (`insumo`) | `nombre`→`NombreInsumo`, `stock`→`Stock`, `precio`, `descuentoCanje`→`DescuentoPactadoCanje` (%) | — | `sumarStock()` |
+| **Producto** (`producto`) | `nombre`→`NombreProducto`, `stock`→`stockProducto`, `stockMinimo`→`stock_minimo`, `precio`→`PrecioProducto`, `coste`→`costeProduccion` (4 decimales), `costoAdicional`→`costo_adicional` | `componentes` → Componente[] (1:n, `orphanRemoval`) | `descontarStock()` lanza `DomainException` si no alcanza. `registrarIngreso()`/`revertirIngreso()` actualizan stock y coste promedio |
+| **Insumo** (`insumo`) | `nombre`→`NombreInsumo`, `stock`→`Stock`, `stockMinimo`→`stock_minimo`, `precio`, `costoPromedio`→`costo_promedio` (4 decimales), `descuentoCanje`→`DescuentoPactadoCanje` (%) | — | `registrarEntrada()`/`revertirEntrada()` (compras y canjes), `descontarStock()` |
+| **Componente** (`producto_componente`) | `cantidad` (por unidad de producto) | `producto`, `insumo` | Único por producto + insumo |
+| **PaseVenta** (`pase_venta`) | `fecha`, `nota`, `costoTotal` | `usuario`, `items` → PaseVentaItem[], `consumos` → PaseVentaConsumo[] | Insumos → productos. Anulable |
+| **PaseVentaItem** / **PaseVentaConsumo** | `cantidad`, `costoUnitario` | `producto` / `insumo` | Guardan el costo del momento para poder revertir |
+| **Auditoria** (`auditoria`) | `fecha`, `usuarioNombre`, `ip`, `entidad`, `entidadId`, `descripcion`, `accion`, `cambios` (JSON), `motivo` | `usuario` (nullable) | Sin timestamps ni soft delete: no se edita ni se borra |
 | **Ticket** (`ticket`) | `fecha`→`Fecha`, `cantidadProductos`→`CProductos`, `total`→`Valor` | `cliente` → Cliente, `usuario` → Usuario, `items` → Venta[] (1:n, cascade persist) | Una venta completa. `agregarProducto()` crea el renglón y descuenta stock |
 | **Venta** (`venta`) | `cantidad`→`CantidadProducto`, `precioUnitario`, `profit`, `fecha`→`fechaVenta`, `total`→`Total` | `ticket`, `cliente`, `producto` | Renglón de un ticket. Guarda el precio del momento |
 | **Compra** (`compras`) | `fecha`→`FechaCompra`, `cantidad`, `costo` | `proveedor`, `insumo`, `usuario` | Un renglón por insumo comprado |
-| **Canje** (`canjes`) | `fecha`→`FechaCanje`, `cantidadProducto`, `cantidadInsumo`, `profit`→`Profit` | `proveedor`, `producto`, `insumo`, `usuario` | `calcularProfit()` |
+| **Canje** (`canjes`) | `fecha`→`FechaCanje`, `cantidadProducto`, `cantidadInsumo`, `profit`→`Profit`, `costoInsumos`→`costo_insumos` | `proveedor`, `producto`, `insumo`, `usuario` | `calcularProfit()`, `aplicarStock()` |
 | **Usuario** (`usuario`) | `nombre`, `email`→`UsuarioEmail` (único), `password`→`PasswordHash`, `rol`, `activo`, `intentosFallidos`, `bloqueadoHasta`, `ultimoLogin` | — | Implementa `AdvancedUserInterface`. Roles en `Usuario::ROLES` (1 = Administrador, 2 = Usuario) |
 
-Los montos son `DECIMAL(12,2)`; Doctrine los devuelve como string y los getters los convierten a
+**Ticket, Compra, Canje y PaseVenta** implementan `Anulable` (trait `AnulableTrait`): columnas
+`anulado_at`, `anulado_por` (→ Usuario) y `motivo_anulacion` (ver *Anulaciones* en la sección 9).
+
+Los montos son `DECIMAL(12,2)` (los costos unitarios, `DECIMAL(14,4)` para no acumular redondeo); Doctrine los devuelve como string y los getters los convierten a
 `float`. El campo `usuario` de Ticket/Compra/Canje es `null` en registros anteriores a su creación.
 
 ### Timestamps y borrado lógico (todas las entidades)
@@ -340,6 +361,29 @@ canjes toman su propia fecha como `created_at`), pasa lo que estaba oculto con `
 borraría `visibility` perdiendo qué registros estaban dados de baja y cargaría fechas `0000-00-00`.
 Usa sintaxis de MariaDB (`ADD COLUMN IF NOT EXISTS`, `CHANGE COLUMN IF EXISTS`).
 
+### Migración v3 → v4 (historial, anulaciones, stock mínimo, costos y pases a venta)
+
+Con la base ya en v3 (`doctrine:schema:validate` sin diferencias):
+
+```bash
+mysqldump -u root emmaaccesorios > backup_antes_v4.sql
+mysql -u root emmaaccesorios < sql/migracion_v3_a_v4.sql
+php bin/console cache:clear --env=prod
+php bin/console doctrine:schema:validate
+```
+
+`sql/migracion_v3_a_v4.sql` **solo agrega** tablas (`auditoria`, `producto_componente`, `pase_venta`,
+`pase_venta_item`, `pase_venta_consumo`) y columnas (anulación en `ticket`, `compras` y `canjes`;
+`stock_minimo` en producto e insumo con valor 5; `insumo.costo_promedio`; `producto.costo_adicional`;
+`canjes.costo_insumos`) y pasa `producto.costeProduccion` a 4 decimales. Al final completa el costo
+promedio de cada insumo con el promedio de sus compras, o con su precio si nunca se compró. No tiene
+`USE`: corre sobre la base elegida (sirve tal cual en el phpMyAdmin de InfinityFree).
+
+> Las fechas guardadas **antes** de esta versión pueden estar 3 horas adelantadas: PHP corría en UTC.
+> Desde v4 `app/autoload.php` fija la zona con `APP_TIMEZONE` (por defecto
+> `America/Argentina/Buenos_Aires`). Los registros viejos no se corrigen solos; si importa, se puede
+> ajustar con `UPDATE ... SET Fecha = Fecha - INTERVAL 3 HOUR WHERE Fecha < '<fecha de la migración>'`.
+
 ## 7. Seguridad y autenticación
 
 ### Flujo de login
@@ -396,10 +440,12 @@ Cuerpos y respuestas en JSON.
 | POST | `/login` | `{email, password}` | `{token, expiraEn, usuario}` |
 | GET | `/me` | — | Usuario actual |
 | POST | `/me/password` | `{actual, nueva}` (nueva ≥ 12 caracteres) | `{message}` |
-| GET | `/dashboard` | — | Totales del mes y productos con stock ≤ 5 |
-| GET | `/productos` | `?q=` | `[{id, nombre, stock, precio, coste, ganancia}]` |
-| POST · PUT `/{id}` · DELETE `/{id}` | `/productos` | `{nombre, stock, precio, coste}` | Producto / 204 |
-| GET · POST · PUT · DELETE | `/insumos` | `{nombre, stock, precio, descuentoCanje?}` | |
+| GET | `/dashboard` | — | Totales del mes, `stockBajo` e `insumosBajos` (stock ≤ mínimo) |
+| GET | `/dashboard/graficos` | — | Ventas acumuladas por día (mes actual y anterior), más vendidos y ventas por usuario |
+| GET | `/productos` | `?q=&bajoMinimo=1` | `[{id, nombre, stock, stockMinimo, bajoMinimo, precio, coste, ganancia, costoAdicional, tieneComposicion}]` |
+| POST · PUT `/{id}` · DELETE `/{id}` | `/productos` | `{nombre, stock, stockMinimo?, precio, coste}` | Producto / 204 |
+| GET · PUT | `/productos/{id}/composicion` | `{costoAdicional, componentes: [{insumoId, cantidad}]}` | Composición con `costoPorUnidad` |
+| GET · POST · PUT · DELETE | `/insumos` | `{nombre, stock, stockMinimo?, precio, costoPromedio?, descuentoCanje?}` | |
 | GET · POST · PUT · DELETE | `/clientes` | `{nombre, ciudadId?, telefono?}` | Incluye `compras` y `totalComprado` |
 | GET · POST · PUT · DELETE | `/proveedores` | `{nombre, ciudadId?, telefono?}` | |
 | GET · POST · PUT · DELETE | `/ciudades` | `{nombre, provincia}` | DELETE → 409 si está en uso |
@@ -411,7 +457,12 @@ Cuerpos y respuestas en JSON.
 | POST | `/compras` | `{proveedorId, fecha?, items: [{insumoId, cantidad, costo}]}` | Lista de compras creadas |
 | GET | `/canjes` | — | Canjes |
 | POST | `/canjes` | `{proveedorId, descuentoProducto?, descuentoInsumo?, items: [{productoId, cantidadProducto, insumoId, cantidadInsumo}]}` | Lista de canjes creados |
-| GET | `/reportes/{ventas\|compras\|canjes}` | Filtros (ver sección 9) | `{titulo, filtros, columnas, filas, totales, resumen}` |
+| POST | `/{ventas\|compras\|canjes\|pases-venta}/{id}/anular` | `{motivo}` (≥ 3 caracteres) | Operación anulada. 403 si la regla no lo permite, 409 si ya estaba anulada o no hay stock para revertir |
+| GET | `/pases-venta` | `?desde&hasta` | Pases a venta |
+| GET | `/pases-venta/{id}` | — | Pase con `items` y `consumos` |
+| POST | `/pases-venta/simular` | `{items: [{productoId, cantidad}]}` | `{items, insumos, costoTotal, problemas}` (no guarda nada) |
+| POST | `/pases-venta` | `{items: [{productoId, cantidad}], nota?}` | Pase creado. 409 con todos los faltantes juntos |
+| GET | `/reportes/{ventas\|compras\|canjes\|pases}` | Filtros (ver sección 9) + `incluirAnuladas=1` | `{titulo, filtros, columnas, filas, totales, resumen}` |
 | GET | `/reportes/{tipo}/excel` | Mismos filtros | Archivo `.xlsx` (`Content-Disposition: attachment`) |
 | GET | `/usuarios` | — | `[{id, nombre}]` (para el filtro "Registró") |
 | GET | `/admin/usuarios` | — (solo rol 1) | Usuarios con email, rol, estado, último ingreso y alta |
@@ -421,6 +472,10 @@ Cuerpos y respuestas en JSON.
 | PUT | `/admin/usuarios/{id}/password` | `{password}` (≥ 12) | Usuario; además lo desbloquea |
 | DELETE | `/admin/usuarios/{id}` | — | 204, soft delete (409 si es tu usuario o el último admin activo) |
 | GET | `/admin/roles` | — (solo rol 1) | `[{id, nombre}]` |
+| GET | `/admin/auditoria` | `?desde&hasta&usuarioId&entidad&entidadId&accion&pagina` (solo rol 1) | `{items, total, pagina, porPagina, entidades, acciones}` |
+
+Las operaciones anulables (tickets, compras, canjes, pases) incluyen `anulado`, `anuladoAt`,
+`anuladoPor`, `motivoAnulacion` y `puedeAnular` (calculado por el backend para el usuario actual).
 
 Códigos de estado:
 
@@ -460,6 +515,9 @@ curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/api/productos
 
 - Un proveedor, una fecha y N renglones (insumo, cantidad, costo total del renglón).
 - Cada renglón es una fila de `compras` y **suma** stock al insumo. Todo en una transacción.
+- Actualiza el **costo promedio ponderado** del insumo (`Entity/CostoPromedio`):
+  `(stock × costo actual + costo de la compra) / (stock + cantidad)`. Si el stock era 0 o negativo, el
+  costo pasa a ser el de la compra.
 
 ### Canje
 
@@ -469,6 +527,60 @@ curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/api/productos
   `precio insumo × (1 − desc. insumo %) × cant. insumo − precio producto × (1 − desc. producto %) × cant. producto`.
   Positiva = recibiste más valor del que entregaste.
 - Todo o nada, igual que ventas y compras.
+- El insumo recibido entra al costo promedio con el valor del producto entregado
+  (`coste × cantidad producto`), guardado en `costo_insumos` para poder revertirlo.
+
+### Insumos, composición y "Pasar a venta"
+
+El **insumo** es la mercadería antes de estar a la venta: materiales para lo que se fabrica en el local
+y artículos comprados para revender. Compras y canjes suman insumos; las ventas descuentan productos. El
+puente es el **pase a venta** (`Service/PasesVenta.php`):
+
+1. Cada producto define su **composición** (`Componente`): qué insumos lleva por unidad, más un costo
+   adicional opcional (mano de obra, packaging). Un artículo de reventa lleva su propio insumo × 1.
+   Sin composición no se puede pasar a venta.
+2. `simular()` calcula insumos necesarios, faltantes y costo, sin guardar (el diálogo lo usa en vivo).
+3. `registrar()` bloquea productos y después insumos (en orden de id), junta **todos** los faltantes en
+   un solo 409, descuenta los insumos, suma stock a los productos y recalcula su `coste` como promedio
+   ponderado con el costo real de los insumos. Guarda cada renglón y consumo con su costo del momento.
+4. Al anularlo vuelven los insumos y salen los productos (409 si ya se vendieron y no alcanza).
+
+### Anulaciones
+
+Ventas, compras, canjes y pases **no se borran: se anulan** (`Service/Anulaciones.php`), con motivo
+obligatorio. La operación queda visible (tachada) y se revierte el stock y el costo promedio. Si el stock
+ya se usó (p. ej. se vendieron los insumos comprados), responde 409 y no cambia nada.
+
+Las anuladas no cuentan en el panel de inicio, los gráficos, los totales de clientes ni los reportes
+(salvo `incluirAnuladas=1`, que las muestra con columna *Estado* pero sin sumarlas).
+
+**Quién puede anular** lo decide un único lugar, `Security/AnulacionVoter.php`, según la variable
+`ANULACION_PERMITIDA` del `.env`:
+
+| Valor | Regla |
+|---|---|
+| `todos` (por defecto) | cualquier usuario, cualquier operación |
+| `admin` | solo administradores |
+| `propias_hoy` | administradores, cualquiera; el resto, solo las que registró en el día |
+
+Cambiarla no requiere tocar código: editar `.env` y borrar `var/cache/prod`. El frontend muestra u
+oculta el botón según `puedeAnular`.
+
+### Historial de cambios (auditoría)
+
+`Auditoria/AuditoriaSubscriber.php` escucha a Doctrine (`onFlush`, `postSoftDelete`, `postFlush`) y
+registra cada alta, modificación, borrado y anulación de los catálogos, operaciones y usuarios: quién,
+cuándo, desde qué IP y qué campos cambiaron (antes → después). Omite timestamps, datos de login y
+los cambios de stock/costo causados por una operación (ya quedan en la operación misma); las
+contraseñas se registran como `***`. Para cambios que no son columnas (p. ej. la composición) se usa
+`anotarCambio()`. Se consulta en **Configuración → Historial** y en la acción *Ver historial* de cada
+catálogo (solo administradores).
+
+### Stock mínimo
+
+Cada producto e insumo tiene su `stockMinimo` (por defecto 5). Está "bajo mínimo" cuando
+`stock ≤ stockMinimo`; el panel de inicio lista los productos para reponer y los insumos para comprar,
+ordenados por lo que falta, y los catálogos tienen el filtro *Solo bajo mínimo*.
 
 ### Bajas
 
@@ -504,6 +616,7 @@ Servicio `Service/Reportes.php` + `Controller/ReporteController.php` + pantalla 
 | Ventas | producto vendido (renglón de ticket) | desde, hasta, cliente, producto, ciudad, usuario | por producto, cliente, ciudad y usuario (cuenta tickets distintos) |
 | Compras | insumo comprado | desde, hasta, proveedor, insumo, usuario | por proveedor e insumo |
 | Canjes | intercambio | desde, hasta, proveedor, producto, insumo, usuario | por proveedor, producto e insumo |
+| Pases a venta | producto pasado a venta | desde, hasta, producto, insumo, usuario | por producto e insumos consumidos |
 
 - Fechas en formato `YYYY-MM-DD`; los ids deben ser enteros positivos (si no → 422).
 - `Reportes::generar()` arma los datos con QueryBuilder (consultas escalares, sin hidratar entidades)
@@ -525,8 +638,20 @@ filtros en `reportes-page.ts`. `ExcelReporte` no necesita cambios.
 
 ### Panel de inicio
 
-Suma desde el día 1 del mes en curso: total y cantidad de tickets, ganancia de ventas, gasto en
-compras, clientes y productos activos, y hasta 10 productos con stock ≤ 5.
+Suma desde el día 1 del mes en curso (sin anuladas): total y cantidad de tickets, ganancia de ventas,
+gasto en compras, clientes y productos activos, productos para reponer e insumos para comprar.
+
+Debajo, `pages/inicio/graficos.ts` dibuja con **Chart.js** (carga diferida) las ventas acumuladas día a
+día contra el mes anterior, los productos más vendidos y las ventas por usuario. Cada gráfico tiene
+vista de tabla; los colores salen de los tokens `--grafico-*` de `styles.scss` y se redibujan al cambiar
+entre modo claro y oscuro.
+
+### Comprobante por WhatsApp
+
+El ticket tiene el botón **WhatsApp** (`shared/whatsapp.ts`): en el celular usa *Compartir* (Web Share
+API) con el PDF adjunto; en la PC abre `wa.me/<teléfono>` con el resumen y descarga el PDF para
+adjuntarlo. El teléfono del cliente se normaliza a formato internacional argentino (`549…`). No usa
+ninguna API paga ni cuenta de WhatsApp Business.
 
 ## 10. Frontend (Angular 20 + Material)
 
@@ -574,14 +699,19 @@ AccesoriosEmma/
 | Ruta | Componente | Tipo |
 |---|---|---|
 | `/login` | `LoginPage` | Formulario de ingreso |
-| `/inicio` | `InicioPage` | Panel con indicadores |
+| `/inicio` | `InicioPage` + `GraficosPanel` | Panel con indicadores, alertas de stock y gráficos |
 | `/ventas` | `VentasPage` + `VentaDialog`, `TicketDialog`, `ticket-pdf.ts` | Operación con filtros |
 | `/compras` | `ComprasPage` + `CompraDialog` | Operación múltiple |
+| `/pases-venta` | `PasesVentaPage` + `PaseDialog`, `PaseDetalleDialog` | Insumos → productos, con simulación en vivo |
 | `/canjes` | `CanjesPage` + `CanjeDialog` | Operación múltiple |
 | `/productos`, `/insumos`, `/proveedores`, `/ciudades`, `/clientes` | `*Page extends CrudPage` | ABM con `FormDialog` |
 | `/clientes/:id` | `ClienteDetallePage` | Perfil + historial + nueva venta |
 | `/reportes` | `ReportesPage` | Pestañas ventas/compras/canjes, filtros, vista previa y descarga Excel |
-| `/configuracion` | `ConfiguracionPage` (`adminGuard`) + `RestablecerPasswordDialog` | Pestañas *Usuarios* (lista con editar, contraseña, activar/desactivar, borrar) y *Agregar usuario* |
+| `/configuracion` | `ConfiguracionPage` (`adminGuard`) + `RestablecerPasswordDialog`, `Historial` | Pestañas *Usuarios*, *Agregar usuario* e *Historial* |
+| `**` (cualquier otra) | `NoEncontradaPage` | Error 404 dentro del menú, con accesos rápidos |
+
+`ComposicionDialog` (productos), `HistorialDialog` (catálogos) y `shared/anular.ts` (pide el motivo)
+completan las pantallas nuevas.
 
 Todas las rutas (salvo login) están bajo el componente `Shell` (`layout/shell.ts`), que arma el
 *navigation drawer* lateral (fijo en escritorio, desplegable en celular) y el menú de usuario.
@@ -595,9 +725,79 @@ Todas las rutas (salvo login) están bajo el componente `Shell` (`layout/shell.t
 - Íconos: **Material Symbols Outlined** (Google Fonts).
 - Tema en `styles.scss` con `mat.theme()` (paletas magenta + naranja, a partir del logo). En los
   componentes usar los tokens `var(--mat-sys-…)` en vez de colores fijos.
-- jsPDF se importa de forma diferida (`import('jspdf')`) para no agrandar la carga inicial.
+- jsPDF y Chart.js se importan de forma diferida (`import(...)`) para no agrandar la carga inicial.
+- **Modo oscuro**: `core/tema.service.ts` guarda la elección en `localStorage` (`emma.tema`) y cambia
+  `color-scheme`; la transición usa la View Transitions API (se desactiva con *reducir movimiento*).
+  Los colores propios se escriben con `light-dark(claro, oscuro)` o tokens `--mat-sys-*`.
+- **PWA**: `@angular/pwa` con *service worker* (`ngsw-config.json`) y `manifest.webmanifest`; la app se
+  puede instalar en el celular. `core/conexion.service.ts` muestra el aviso "Sin conexión" y ofrece
+  recargar cuando hay una versión nueva. El *service worker* solo funciona con HTTPS (o `localhost`).
 
-## 11. Recetas: cómo agregar cosas
+## 11. Pruebas automáticas
+
+Se corren solas en GitHub Actions en cada push y pull request (`.github/workflows/pruebas.yml`): si
+algo se rompe, el commit aparece con una ✗ roja en GitHub.
+
+### Backend (PHPUnit 9)
+
+```bash
+cd BackendEmma
+vendor/bin/phpunit                                   # todas
+vendor/bin/phpunit --filter VentaControllerTest      # un archivo o una prueba
+```
+
+- Usan **otra base**: `<database_name>_test` (ver `config_test.yml`). `tests/bootstrap.php` la borra y
+  la recrea con el esquema actual de las entidades al empezar, así que **nunca tocan los datos reales**
+  y no hace falta migrar nada para correrlas. Solo necesitan MySQL andando y `parameters.yml`.
+- Cada prueba corre dentro de una transacción que se deshace al terminar (`ApiTestCase`): todas
+  arrancan con la base vacía y no dependen del orden. Los `rollback` de los controladores usan
+  *savepoints*, así que se comportan igual que en producción.
+- En el entorno `test`, bcrypt usa costo 4 (en lugar de 12) para que sean rápidas.
+
+| Archivo | Qué cubre |
+|---|---|
+| `tests/AppBundle/ApiTestCase.php` | Base: `api()` hace la petición y devuelve `[código, json]`; `crearUsuario()`, `crearProducto()`, etc. arman los datos |
+| `Entity/OperacionesTest.php` | Reglas de las entidades sin base: stock, totales del ticket, ganancia del canje, bloqueo de usuarios |
+| `Controller/AuthControllerTest.php` | Login, bloqueo por intentos, usuario desactivado, token invalidado, cambio de contraseña |
+| `Controller/VentaControllerTest.php` | Venta: stock, precio de la base, *rollback* si falta stock, cliente/producto borrado |
+| `Controller/CompraCanjeControllerTest.php` | Compras y canjes: stock, ganancia, todo o nada |
+| `Controller/AdminUsuarioControllerTest.php` | Configuración: permisos, validaciones y reglas de administradores |
+| `Controller/CatalogoReporteControllerTest.php` | Validación de catálogos, borrado lógico, reportes, Excel y panel de inicio |
+
+Ejemplo de una prueba nueva:
+
+```php
+public function testAlgo()
+{
+    $usuario = $this->crearUsuario();
+    $producto = $this->crearProducto('Collar', 10, 1000);
+
+    list($codigo, $datos) = $this->api('GET', '/api/productos/'.$producto->getId(), null, $usuario);
+
+    $this->assertSame(200, $codigo);
+    $this->assertSame('Collar', $datos['nombre']);
+}
+```
+
+> JSON no distingue `1100` de `1100.0`: para montos que vienen de la API usar `assertEquals`, no
+> `assertSame`.
+
+### Frontend (Vitest)
+
+```bash
+cd AccesoriosEmma
+npm test              # una corrida
+npm run test:watch    # se vuelven a correr al guardar
+```
+
+Usa el builder `@angular/build:unit-test` con **Vitest** y `jsdom` (no necesita navegador). Los
+archivos `*.spec.ts` van al lado del código que prueban; la sintaxis es `describe` / `it` / `expect`,
+y para simular funciones `vi.fn()`, `vi.spyOn()`, `vi.useFakeTimers()`.
+
+Hoy cubren `AuthService` + interceptor (sesión, token, 401, vencimiento), `TemaService`,
+`mensajeDeError` / `erroresDeCampos` y las utilidades de contraseña.
+
+## 12. Recetas: cómo agregar cosas
 
 ### Un campo nuevo en un catálogo (ej. `codigo` en Producto)
 
@@ -633,28 +833,83 @@ abrir transacción, bloquear con `buscarParaActualizarStock()` en orden de id (`
 entidades, `flush`, `commit`; ante `DomainException` → `rollback` y 409. Registrar
 `->setUsuario($this->getUser())`.
 
-## 12. Despliegue en producción
+## 13. Despliegue en producción
 
-### Backend (Apache / XAMPP)
+El sistema se publica **en un solo dominio**: el frontend en la raíz y la API en `/api`. Así no hace
+falta CORS y funciona en hostings gratuitos como **InfinityFree**, cuyo filtro anti-bots bloquea las
+llamadas a una API que esté en otro dominio.
 
-1. Subir `BackendEmma/` y correr `composer install --no-dev --optimize-autoloader`.
-2. Crear `.env` con `SYMFONY_ENV=prod`, la base real, un `JWT_SECRET` nuevo y el dominio del frontend
-   en `CORS_ALLOW_ORIGIN`.
-3. El *DocumentRoot* (o un VirtualHost) debe apuntar a `BackendEmma/web/`, para que `.env`, `app/`,
-   `src/` y `vendor/` **no** sean accesibles desde la web. Requiere `mod_rewrite` (`web/.htaccess`).
-4. `php bin/console cache:clear --env=prod` y dar permisos de escritura a `var/`.
-5. Base: usuario MySQL propio con permisos `SELECT, INSERT, UPDATE, DELETE` para la aplicación; los
-   comandos `doctrine:*` se corren con un usuario administrador.
-6. **HTTPS obligatorio**: el token viaja en cada petición.
+```
+htdocs/
+├── .htaccess          ← /api → backend/web/app.php · /backend bloqueado · resto → Angular
+├── index.html, *.js, *.css, logoEmma.png …   (frontend compilado)
+└── backend/           (Symfony: app/, src/, vendor/, var/, web/app.php)
+    ├── .env                         ← solo en el servidor
+    └── app/config/parameters.yml    ← solo en el servidor
+```
 
-### Frontend
+Todo lo arma **`deploy/deploy.sh`**:
 
-1. Poner la URL real de la API en `src/environments/environment.ts`.
-2. `npx ng build` (si va en una subcarpeta: `--base-href /carpeta/`).
-3. Subir `dist/AccesoriosEmma/browser/` al servidor web y redirigir las rutas desconocidas a
-   `index.html` (en Apache: `FallbackResource /index.html`).
+1. Corre las pruebas del backend y del frontend (si alguna falla, no publica nada).
+2. `ng build` del frontend.
+3. Copia el backend sin pruebas ni credenciales, instala `vendor/` **sin** dependencias de desarrollo y le
+   quita a las librerías sus propias pruebas y documentación (de ~10.200 a ~7.000 archivos).
+4. Agrega los `.htaccess` (plantillas en `deploy/plantillas/`) que bloquean el acceso web a `app/`,
+   `src/`, `vendor/`, `var/`, `.env`, `parameters.yml` y `composer.*`.
+5. Deja todo en `deploy/build/htdocs/` y, si hay `lftp` y `deploy/deploy.env`, lo sube por FTP:
+   **solo los archivos que cambiaron**, sin tocar nunca `backend/.env`, `parameters.yml` ni `var/`.
+6. Borra `backend/var/cache/prod` en el servidor. **Imprescindible**: en `prod` Symfony no detecta
+   cambios en rutas ni configuración, y sin consola en el hosting no hay otra forma de limpiar la caché.
 
-## 13. Deuda técnica y próximos pasos
+```bash
+cp deploy/deploy.env.dist deploy/deploy.env   # una vez: datos de FTP
+sudo apt install lftp                          # una vez
+./deploy/deploy.sh                             # cada vez que se publica
+./deploy/deploy.sh --solo-armar                # solo armar (subir a mano con FileZilla)
+```
+
+### Primera publicación en InfinityFree
+
+1. **Cuenta y dominio**: crear la cuenta y el sitio (subdominio gratuito o dominio propio).
+2. **SSL**: panel → *SSL Certificates* → pedir el certificado gratuito y esperar a que se active. Es
+   obligatorio: el token viaja en cada petición, y la app instalable (PWA) y "Compartir" lo exigen.
+3. **PHP**: panel → *PHP Config* → la versión 8.x más reciente que ofrezca.
+4. **Base de datos**: panel → *MySQL Databases* → crearla. Anotar host (`sqlXXX.infinityfree.com`),
+   nombre (`if0_..._emma`), usuario y contraseña.
+5. **Esquema**: en *phpMyAdmin* importar `BackendEmma/sql/schema.sql` y después, en orden, los
+   `sql/migracion_v3_a_*.sql` que existan.
+6. **Primer administrador**: seguir `BackendEmma/sql/crear_usuario.sql` (genera el hash con PHP en tu
+   PC y ejecuta el `INSERT` en phpMyAdmin).
+7. **Publicar**: `./deploy/deploy.sh`.
+8. **Configuración del servidor** (una sola vez, por FTP):
+   - `htdocs/backend/.env` ← copiar `deploy/plantillas/env.prod` y completar `JWT_SECRET` (uno nuevo) y
+     el dominio.
+   - `htdocs/backend/app/config/parameters.yml` ← copiar `parameters.yml.dist` y completar los datos
+     del paso 4.
+9. Entrar a `https://tu-dominio/` e iniciar sesión.
+
+**Pasar datos de tu PC al hosting**: exportar la base local desde phpMyAdmin (o `mysqldump`) e
+importarla en la del hosting **en lugar** de los pasos 5 y 6.
+
+### Cada actualización
+
+1. `./deploy/deploy.sh`.
+2. Si el cambio trae un script nuevo en `BackendEmma/sql/` (`migracion_*.sql`), ejecutarlo en
+   phpMyAdmin **antes** de usar el sistema. Cada script dice al principio qué cambia.
+
+### Límites de InfinityFree a tener en cuenta
+
+- Sin consola: no se puede correr `bin/console` (de ahí los scripts SQL y el borrado de caché por FTP).
+- Unos 30.000 archivos por cuenta (el sitio usa ~7.000) y un límite diario de visitas y de CPU: sobra
+  para un comercio, pero no sirve para una tienda pública con mucho tráfico.
+- Los errores de PHP no se ven: si la API responde 500, mirar `backend/var/logs/prod.log` por FTP.
+
+### Hosting profesional (con SSH)
+
+Lo mismo funciona tal cual. Además se puede: correr `php bin/console doctrine:schema:update`, el
+comando `app:usuario:crear`, y apuntar el *DocumentRoot* a `htdocs/` sin cambios.
+
+## 14. Deuda técnica y próximos pasos
 
 - **Symfony 3.4 está fuera de soporte** desde noviembre de 2021 y `composer audit` reporta
   vulnerabilidades. La mayoría afecta componentes no usados (Twig, Mailer, X509); la que aplica tiene
@@ -662,14 +917,11 @@ entidades, `flush`, `commit`; ante `DomainException` → `rollback` y 409. Regis
   entidades y repositorios se pueden llevar casi sin cambios (pasando de anotaciones a atributos PHP).
 - **Doctrine ORM 2.7 en PHP 8**: funciona en las pruebas pero no está declarado oficialmente; en
   producción preferir PHP 7.4 mientras se siga en Symfony 3.4.
-- **Tests automatizados**: hoy no hay. Prioridad sugerida: tests funcionales de la API para ventas,
-  compras y canjes (stock y *rollback*), y del login (bloqueo).
 - **Migraciones versionadas**: sumar DoctrineMigrationsBundle en lugar de `schema:update`.
-- **Compras y canjes agrupados**: cada renglón es una fila independiente. Si se necesita ver/anular
-  una compra completa, agregar una entidad cabecera (como `Ticket` en ventas).
+- **Compras y canjes agrupados**: cada renglón es una fila independiente y se anula por separado. Si se
+  necesita anular una compra completa de una vez, agregar una entidad cabecera (como `Ticket`).
 - **Roles**: por ahora el rol solo restringe Configuración; falta definir qué puede hacer cada rol en el
   resto del sistema.
 - **Papelera**: no hay pantalla para ver o restaurar registros borrados (se restauran por SQL).
-- **Anulación de ventas** (devolver stock): no implementada.
 - **Reportes muy grandes**: el Excel se arma en memoria; con decenas de miles de renglones conviene
   paginar la vista previa y generar el archivo en segundo plano.

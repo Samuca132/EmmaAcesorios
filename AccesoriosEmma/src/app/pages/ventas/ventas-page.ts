@@ -11,8 +11,9 @@ import { debounceTime } from 'rxjs';
 import { ApiService, sinError } from '../../core/api.service';
 import { Ciudad, Cliente, Producto, Ticket } from '../../core/models';
 import { NotificacionService } from '../../core/notificacion.service';
-import { Columna, DataTable } from '../../shared/data-table';
+import { AccionFila, Columna, DataTable } from '../../shared/data-table';
 import { PageHeader } from '../../shared/page-header';
+import { anularVenta } from './anular-venta';
 import { TicketDialog } from './ticket-dialog';
 import { VentaDialog, VentaDialogData } from './venta-dialog';
 
@@ -63,7 +64,8 @@ import { VentaDialog, VentaDialogData } from './venta-dialog';
 
       <app-data-table [columnas]="columnas" [datos]="tickets()" [cargando]="cargando()"
                       [conEditar]="false" [conBorrar]="false" [conVer]="true" iconoVer="receipt_long"
-                      textoVer="Ver ticket" textoVacio="No hay ventas registradas." (ver)="verTicket($event)" />
+                      textoVer="Ver ticket" textoVacio="No hay ventas registradas." (ver)="verTicket($event)"
+                      [acciones]="acciones" [atenuada]="anulada" (accion)="anular($event.fila)" />
     </div>
   `,
   styles: `
@@ -78,7 +80,7 @@ export class VentasPage implements OnInit {
   readonly clientes = toSignal(sinError(this.api.clientes()), { initialValue: [] as Cliente[] });
   readonly productos = toSignal(sinError(this.api.productos()), { initialValue: [] as Producto[] });
   readonly ciudades = toSignal(sinError(this.api.ciudades()), { initialValue: [] as Ciudad[] });
-  readonly tickets = signal<Ticket[]>([]);
+  readonly tickets = signal<(Ticket & { estado: string })[]>([]);
   readonly cargando = signal(true);
 
   readonly filtros = new FormGroup({
@@ -89,7 +91,12 @@ export class VentasPage implements OnInit {
     hasta: new FormControl<string | null>(null),
   });
 
-  readonly columnas: Columna<Ticket>[] = [
+  readonly acciones: AccionFila<Ticket>[] = [
+    { id: 'anular', texto: 'Anular venta', icono: 'block', visible: (t) => t.puedeAnular },
+  ];
+  readonly anulada = (t: Ticket) => t.anulado;
+
+  readonly columnas: Columna<Ticket & { estado: string }>[] = [
     { clave: 'id', titulo: 'N°' },
     { clave: 'fecha', titulo: 'Fecha', tipo: 'fechaHora' },
     { clave: 'cliente', titulo: 'Cliente' },
@@ -97,6 +104,7 @@ export class VentasPage implements OnInit {
     { clave: 'cantidadProductos', titulo: 'Productos', tipo: 'numero' },
     { clave: 'total', titulo: 'Total', tipo: 'moneda' },
     { clave: 'usuario', titulo: 'Registró' },
+    { clave: 'estado', titulo: 'Estado' },
   ];
 
   ngOnInit(): void {
@@ -108,7 +116,7 @@ export class VentasPage implements OnInit {
     this.cargando.set(true);
     this.api.ventas(this.filtros.getRawValue()).subscribe({
       next: (t) => {
-        this.tickets.set(t);
+        this.tickets.set(t.map((x) => ({ ...x, estado: x.anulado ? 'Anulada' : '' })));
         this.cargando.set(false);
       },
       error: (err) => {
@@ -131,6 +139,18 @@ export class VentasPage implements OnInit {
   }
 
   verTicket(t: Ticket): void {
-    this.dialog.open(TicketDialog, { data: t.id, width: '640px' });
+    const ref = this.dialog.open(TicketDialog, { data: t.id, width: '640px' });
+    const detalle = ref.componentInstance;
+    ref.afterClosed().subscribe(() => detalle.anulado && this.cargar());
+  }
+
+  anular(t: Ticket): void {
+    anularVenta(this.dialog, this.api, t).subscribe((anulado) => {
+      if (anulado) {
+        this.notificacion.ok(`Se anuló la venta N° ${t.id} y el stock volvió a los productos.`);
+        this.cargar();
+      }
+    });
   }
 }
+

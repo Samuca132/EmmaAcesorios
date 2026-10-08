@@ -19,6 +19,11 @@ export const routes: Routes = [
       { path: 'ventas', title: 'Ventas · Emma', loadComponent: () => import('./pages/ventas/ventas-page').then((m) => m.VentasPage) },
       { path: 'compras', title: 'Compras · Emma', loadComponent: () => import('./pages/compras/compras-page').then((m) => m.ComprasPage) },
       { path: 'canjes', title: 'Canjes · Emma', loadComponent: () => import('./pages/canjes/canjes-page').then((m) => m.CanjesPage) },
+      {
+        path: 'pases-venta',
+        title: 'Pasar a venta · Emma',
+        loadComponent: () => import('./pages/pases-venta/pases-venta-page').then((m) => m.PasesVentaPage),
+      },
       { path: 'reportes', title: 'Reportes · Emma', loadComponent: () => import('./pages/reportes/reportes-page').then((m) => m.ReportesPage) },
       { path: 'productos', title: 'Productos · Emma', loadComponent: () => import('./pages/productos/productos-page').then((m) => m.ProductosPage) },
       { path: 'insumos', title: 'Insumos · Emma', loadComponent: () => import('./pages/insumos/insumos-page').then((m) => m.InsumosPage) },
@@ -36,7 +41,12 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/configuracion/configuracion-page').then((m) => m.ConfiguracionPage),
       },
       { path: 'ciudades', title: 'Ciudades · Emma', loadComponent: () => import('./pages/ciudades/ciudades-page').then((m) => m.CiudadesPage) },
+      // Siempre al final: cualquier otra dirección muestra el 404 dentro del menú
+      {
+        path: '**',
+        title: 'Página no encontrada · Emma',
+        loadComponent: () => import('./pages/no-encontrada/no-encontrada-page').then((m) => m.NoEncontradaPage),
+      },
     ],
   },
-  { path: '**', redirectTo: '' },
 ];

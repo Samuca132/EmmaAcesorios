@@ -6,6 +6,7 @@ use AppBundle\Entity\Ticket;
 use AppBundle\Repository\ClienteRepository;
 use AppBundle\Repository\ProductoRepository;
 use AppBundle\Repository\TicketRepository;
+use AppBundle\Service\Anulaciones;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,7 +37,7 @@ class VentaController extends ApiController
     public function listar(Request $request)
     {
         return new JsonResponse(array_map(function (Ticket $t) {
-            return $t->toArray();
+            return $this->conPermisos($t, $t->toArray());
         }, $this->tickets->listar([
             'clienteId' => $request->query->get('clienteId'),
             'ciudadId' => $request->query->get('ciudadId'),
@@ -53,7 +54,19 @@ class VentaController extends ApiController
             throw $this->noEncontrado('Ticket');
         }
 
-        return new JsonResponse($ticket->toArray(true));
+        return new JsonResponse($this->conPermisos($ticket, $ticket->toArray(true)));
+    }
+
+    /**
+     * POST /api/ventas/{id}/anular  {"motivo": "..."}: devuelve el stock de todos los productos.
+     */
+    public function anular(Request $request, $id, Anulaciones $anulaciones)
+    {
+        return $this->anularOperacion($request, $anulaciones, function () use ($id) {
+            return $this->tickets->buscarConItems($id);
+        }, function (Ticket $t) {
+            return $t->toArray(true);
+        });
     }
 
     /**
@@ -111,7 +124,7 @@ class VentaController extends ApiController
             throw $e;
         }
 
-        return new JsonResponse($ticket->toArray(true), 201);
+        return new JsonResponse($this->conPermisos($ticket, $ticket->toArray(true)), 201);
     }
 
     private function fecha($valor)

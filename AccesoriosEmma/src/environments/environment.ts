@@ -1,6 +1,6 @@
 // Configuración de producción (ng build).
-// Ajustá apiUrl a la URL donde publiques el backend Symfony.
+// Frontend y API se publican en el mismo dominio (ver deploy/): la API está en /api.
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost/BackendEmma/web/api',
+  apiUrl: '/api',
 };

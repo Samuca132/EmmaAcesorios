@@ -1,0 +1,11 @@
+# Raíz del backend: protege .env y los archivos de Composer.
+# (No se puede bloquear la carpeta entera: web/app.php tiene que seguir accesible
+# para las reglas de /api. Las subcarpetas internas tienen su propio .htaccess.)
+<FilesMatch "^(\.env.*|composer\.(json|lock)|.*\.ya?ml|.*\.dist)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Deny from all
+    </IfModule>
+</FilesMatch>

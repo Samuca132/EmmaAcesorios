@@ -88,6 +88,12 @@ class ReporteController extends ApiController
             return $this->errorDeCampo('hasta', 'La fecha "hasta" no puede ser anterior a "desde".');
         }
 
+        $incluir = (string) $request->query->get('incluirAnuladas', '');
+        if (!in_array($incluir, ['', '0', '1', 'true', 'false'], true)) {
+            return $this->errorDeCampo('incluirAnuladas', 'Valor inválido.');
+        }
+        $filtros['incluirAnuladas'] = in_array($incluir, ['1', 'true'], true);
+
         foreach (array_merge(['usuarioId'], Reportes::FILTROS[$tipo]) as $campo) {
             $valor = $request->query->get($campo);
             if ($valor === null || $valor === '') {

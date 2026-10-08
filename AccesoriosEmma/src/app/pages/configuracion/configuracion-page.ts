@@ -22,19 +22,20 @@ import { FormDialog, FormDialogData } from '../../shared/form-dialog';
 import { LARGO_MINIMO_PASSWORD, generarPassword, passwordsCoinciden } from './password';
 import { RestablecerPasswordDialog } from './restablecer-password-dialog';
 import { PageHeader } from '../../shared/page-header';
+import { Historial } from './historial';
 
 const LARGO_MINIMO = LARGO_MINIMO_PASSWORD;
 
 type FilaUsuario = UsuarioAdmin & { nombreVisible: string; estado: string; esYo: boolean };
 
 /**
- * Configuración (solo administradores, rol 1). Pestañas: lista de usuarios y
- * alta de usuarios con el rol que corresponda.
+ * Configuración (solo administradores, rol 1). Pestañas: lista de usuarios,
+ * alta de usuarios con el rol que corresponda e historial de cambios.
  */
 @Component({
   selector: 'app-configuracion-page',
   imports: [
-    PageHeader, DataTable, ReactiveFormsModule, MatTabsModule, MatFormFieldModule, MatInputModule, MatSelectModule,
+    PageHeader, DataTable, Historial, ReactiveFormsModule, MatTabsModule, MatFormFieldModule, MatInputModule, MatSelectModule,
     MatButtonModule, MatIconModule, MatCardModule, MatTooltipModule, MatProgressSpinnerModule,
   ],
   template: `
@@ -132,6 +133,14 @@ type FilaUsuario = UsuarioAdmin & { nombreVisible: string; estado: string; esYo:
               </mat-card-content>
             </mat-card>
           </div>
+        </mat-tab>
+
+        <mat-tab>
+          <ng-template mat-tab-label><mat-icon class="tab-icono">history</mat-icon>Historial</ng-template>
+          <!-- matTabContent: se carga recién al abrir la pestaña -->
+          <ng-template matTabContent>
+            <div class="contenido"><app-historial /></div>
+          </ng-template>
         </mat-tab>
       </mat-tab-group>
     </div>

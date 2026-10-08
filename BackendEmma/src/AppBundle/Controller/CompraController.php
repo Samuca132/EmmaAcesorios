@@ -6,6 +6,7 @@ use AppBundle\Entity\Compra;
 use AppBundle\Repository\CompraRepository;
 use AppBundle\Repository\InsumoRepository;
 use AppBundle\Repository\ProveedorRepository;
+use AppBundle\Service\Anulaciones;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,7 +35,7 @@ class CompraController extends ApiController
     public function listar(Request $request)
     {
         return new JsonResponse(array_map(function (Compra $c) {
-            return $c->toArray();
+            return $this->conPermisos($c, $c->toArray());
         }, $this->compras->listar([
             'proveedorId' => $request->query->get('proveedorId'),
             'insumoId' => $request->query->get('insumoId'),
@@ -90,7 +91,7 @@ class CompraController extends ApiController
                     ->setCosto($item['costo'])
                     ->setFecha($fecha)
                     ->setUsuario($this->getUser());
-                $insumos[$i]->sumarStock($item['cantidad']);
+                $insumos[$i]->registrarEntrada($item['cantidad'], $item['costo'] / $item['cantidad']);
                 $this->em->persist($compra);
                 $compras[] = $compra;
             }
@@ -102,7 +103,19 @@ class CompraController extends ApiController
         }
 
         return new JsonResponse(array_map(function (Compra $c) {
-            return $c->toArray();
+            return $this->conPermisos($c, $c->toArray());
         }, $compras), 201);
+    }
+
+    /**
+     * POST /api/compras/{id}/anular  {"motivo": "..."}
+     */
+    public function anular(Request $request, $id, Anulaciones $anulaciones)
+    {
+        return $this->anularOperacion($request, $anulaciones, function () use ($id) {
+            return $this->compras->find((int) $id);
+        }, function (Compra $c) {
+            return $c->toArray();
+        });
     }
 }

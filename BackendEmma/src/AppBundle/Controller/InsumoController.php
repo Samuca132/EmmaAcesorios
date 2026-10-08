@@ -55,8 +55,12 @@ class InsumoController extends ApiController
         $insumo
             ->setNombre(self::valor($data, 'nombre'))
             ->setStock(self::valor($data, 'stock'))
+            // opcional: si no se manda, queda el que tenía (5 en uno nuevo)
+            ->setStockMinimo(self::valor($data, 'stockMinimo', $insumo->getStockMinimo()))
             ->setPrecio(self::valor($data, 'precio'))
-            ->setDescuentoCanje(self::valor($data, 'descuentoCanje'));
+            ->setDescuentoCanje(self::valor($data, 'descuentoCanje'))
+            // opcional: normalmente lo calculan las compras y los canjes; se puede corregir a mano
+            ->setCostoPromedio(self::valor($data, 'costoPromedio', $insumo->getCostoPromedio()));
 
         if ($errores = $this->validarEntidad($insumo)) {
             $this->em->clear();

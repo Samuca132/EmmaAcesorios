@@ -3,5 +3,6 @@
     <button mat-flat-button (click)="nuevo()"><mat-icon>add</mat-icon>Nuevo proveedor</button>
   </app-page-header>
   <app-data-table [columnas]="columnas" [datos]="datos()" [cargando]="cargando()"
-                  (editar)="editar($event)" (borrar)="borrar($event)" />
+                  (editar)="editar($event)" (borrar)="borrar($event)"
+                  [acciones]="acciones()" (accion)="accion($event)" />
 </div>

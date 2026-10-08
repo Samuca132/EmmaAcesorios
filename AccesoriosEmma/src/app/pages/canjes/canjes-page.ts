@@ -5,7 +5,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../../core/api.service';
 import { Canje } from '../../core/models';
 import { NotificacionService } from '../../core/notificacion.service';
-import { Columna, DataTable } from '../../shared/data-table';
+import { pedirAnulacion } from '../../shared/anular';
+import { AccionFila, Columna, DataTable } from '../../shared/data-table';
 import { PageHeader } from '../../shared/page-header';
 import { CanjeDialog } from './canje-dialog';
 
@@ -18,7 +19,8 @@ import { CanjeDialog } from './canje-dialog';
         <button mat-flat-button (click)="nuevo()"><mat-icon>add</mat-icon>Nuevo canje</button>
       </app-page-header>
       <app-data-table [columnas]="columnas" [datos]="canjes()" [cargando]="cargando()"
-                      [conEditar]="false" [conBorrar]="false" textoVacio="No hay canjes registrados." />
+                      [conEditar]="false" [conBorrar]="false" textoVacio="No hay canjes registrados."
+                      [acciones]="acciones" [atenuada]="anulada" (accion)="anular($event.fila)" />
     </div>
   `,
 })
@@ -27,9 +29,14 @@ export class CanjesPage implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly notificacion = inject(NotificacionService);
 
-  readonly canjes = signal<Canje[]>([]);
+  readonly canjes = signal<(Canje & { estado: string })[]>([]);
   readonly cargando = signal(true);
-  readonly columnas: Columna<Canje>[] = [
+  readonly acciones: AccionFila<Canje>[] = [
+    { id: 'anular', texto: 'Anular canje', icono: 'block', visible: (x) => x.puedeAnular },
+  ];
+  readonly anulada = (x: Canje) => x.anulado;
+
+  readonly columnas: Columna<Canje & { estado: string }>[] = [
     { clave: 'fecha', titulo: 'Fecha', tipo: 'fecha' },
     { clave: 'proveedor', titulo: 'Proveedor' },
     { clave: 'producto', titulo: 'Producto entregado' },
@@ -38,6 +45,7 @@ export class CanjesPage implements OnInit {
     { clave: 'cantidadInsumo', titulo: 'Cant.', tipo: 'numero' },
     { clave: 'profit', titulo: 'Ganancia', tipo: 'moneda' },
     { clave: 'usuario', titulo: 'Registró' },
+    { clave: 'estado', titulo: 'Estado' },
   ];
 
   ngOnInit(): void {
@@ -48,7 +56,7 @@ export class CanjesPage implements OnInit {
     this.cargando.set(true);
     this.api.canjes().subscribe({
       next: (c) => {
-        this.canjes.set(c);
+        this.canjes.set(c.map((x) => ({ ...x, estado: x.anulado ? `Anulada: ${x.motivoAnulacion}` : '' })));
         this.cargando.set(false);
       },
       error: (err) => {
@@ -68,5 +76,18 @@ export class CanjesPage implements OnInit {
           this.cargar();
         }
       });
+  }
+
+  anular(c: Canje): void {
+    pedirAnulacion(this.dialog, {
+      titulo: `Anular canje con ${c.proveedor}`,
+      mensaje: `Vuelven ${c.cantidadProducto} × ${c.producto} al stock y se restan ${c.cantidadInsumo} × ${c.insumo}. El canje queda en el historial marcado como anulado.`,
+      anular: (motivo) => this.api.anular<Canje>('canjes', c.id, motivo),
+    }).subscribe((anulado) => {
+      if (anulado) {
+        this.notificacion.ok('Se anuló el canje y se revirtió el stock.');
+        this.cargar();
+      }
+    });
   }
 }

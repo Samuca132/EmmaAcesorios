@@ -1,5 +1,21 @@
 imports:
     - { resource: config_dev.yml }
 
+parameters:
+    log_level: warning
+
 framework:
     test: ~
+
+# Las pruebas usan su propia base (<nombre>_test), que se recrea en cada corrida:
+# nunca tocan los datos reales.
+doctrine:
+    dbal:
+        dbname: '%database_name%_test'
+
+# bcrypt con costo mínimo: el real (12) haría las pruebas muy lentas
+security:
+    encoders:
+        AppBundle\Entity\Usuario:
+            algorithm: bcrypt
+            cost: 4

@@ -3,3 +3,8 @@
 !/var/.gitkeep
 /.env
 /.web-server-pid
+# Credenciales locales de la base (se copia de parameters.yml.dist)
+/app/config/parameters.yml
+# Cache de PHPUnit
+/.phpunit.result.cache
+/backup_*.sql

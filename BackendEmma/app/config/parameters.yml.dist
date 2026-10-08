@@ -1,0 +1,10 @@
+# Copiar como parameters.yml y completar con los datos reales de MySQL.
+# parameters.yml está en .gitignore: nunca subir credenciales al repositorio.
+# Las pruebas automáticas usan la base "<database_name>_test", que se borra y
+# se recrea en cada corrida (ver BackendEmma/tests/bootstrap.php).
+parameters:
+    database_host: 127.0.0.1
+    database_port: 3306
+    database_name: emmaaccesorios
+    database_user: root
+    database_password: ~

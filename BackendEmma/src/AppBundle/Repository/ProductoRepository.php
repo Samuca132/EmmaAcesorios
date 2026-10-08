@@ -2,6 +2,7 @@
 
 namespace AppBundle\Repository;
 
+use AppBundle\Entity\Componente;
 use AppBundle\Entity\Producto;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Common\Persistence\ManagerRegistry;
@@ -17,9 +18,13 @@ class ProductoRepository extends ServiceEntityRepository
     /**
      * @return Producto[]
      */
+    /**
+     * @return array[] cada fila: [0 => Producto, 'componentes' => int]
+     */
     public function listar($busqueda = null)
     {
         $qb = $this->createQueryBuilder('p')
+            ->addSelect(sprintf('(SELECT COUNT(c.id) FROM %s c WHERE c.producto = p) AS componentes', Componente::class))
             ->orderBy('p.nombre');
 
         if ($busqueda) {
@@ -51,6 +56,18 @@ class ProductoRepository extends ServiceEntityRepository
         return $this->getEntityManager()->find(Producto::class, (int) $id, LockMode::PESSIMISTIC_WRITE);
     }
 
+    /**
+     * Igual que buscarParaActualizarStock(), pero también encuentra los
+     * borrados: al anular una operación el stock vuelve aunque el producto
+     * ya no esté en el catálogo.
+     */
+    public function buscarParaRevertirStock($id)
+    {
+        return IncluyeBorrados::ejecutar($this->getEntityManager(), function () use ($id) {
+            return $this->buscarParaActualizarStock($id);
+        });
+    }
+
     public function contarActivos()
     {
         return (int) $this->createQueryBuilder('p')
@@ -61,12 +78,15 @@ class ProductoRepository extends ServiceEntityRepository
     /**
      * @return Producto[]
      */
-    public function conStockBajo($limite = 5, $max = 10)
+    /**
+     * Productos con stock en su mínimo o por debajo, los más urgentes primero.
+     */
+    public function conStockBajo($max = 10)
     {
         return $this->createQueryBuilder('p')
-            ->where('p.stock <= :limite')
-            ->setParameter('limite', $limite)
-            ->orderBy('p.stock')->addOrderBy('p.nombre')
+            ->addSelect('p.stock - p.stockMinimo AS HIDDEN faltante')
+            ->where('p.stock <= p.stockMinimo')
+            ->orderBy('faltante')->addOrderBy('p.nombre')
             ->setMaxResults($max)
             ->getQuery()->getResult();
     }

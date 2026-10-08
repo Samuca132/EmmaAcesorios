@@ -4,6 +4,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -28,6 +29,7 @@ const FILTROS: Record<TipoReporte, ('clienteId' | 'productoId' | 'ciudadId' | 'p
   ventas: ['clienteId', 'productoId', 'ciudadId'],
   compras: ['proveedorId', 'insumoId'],
   canjes: ['proveedorId', 'productoId', 'insumoId'],
+  pases: ['productoId', 'insumoId'],
 };
 
 const TIPOS_TABLA: Record<TipoDato, TipoColumna> = {
@@ -40,13 +42,13 @@ function hoy(): string {
 }
 
 /**
- * Reportes de ventas, compras y canjes con filtros, vista previa y
+ * Reportes de ventas, compras, canjes y pases a venta con filtros, vista previa y
  * descarga en Excel (el .xlsx lo genera el backend).
  */
 @Component({
   selector: 'app-reportes-page',
   imports: [
-    PageHeader, DataTable, ReactiveFormsModule, MatTabsModule, MatFormFieldModule, MatInputModule,
+    PageHeader, DataTable, ReactiveFormsModule, MatCheckboxModule, MatTabsModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatButtonModule, MatIconModule, MatCardModule, MatTableModule, MatExpansionModule,
     MatProgressSpinnerModule, CurrencyPipe, DecimalPipe,
   ],
@@ -63,6 +65,7 @@ function hoy(): string {
         <mat-tab><ng-template mat-tab-label><mat-icon class="tab-icono">point_of_sale</mat-icon>Ventas</ng-template></mat-tab>
         <mat-tab><ng-template mat-tab-label><mat-icon class="tab-icono">shopping_cart</mat-icon>Compras</ng-template></mat-tab>
         <mat-tab><ng-template mat-tab-label><mat-icon class="tab-icono">swap_horiz</mat-icon>Canjes</ng-template></mat-tab>
+        <mat-tab><ng-template mat-tab-label><mat-icon class="tab-icono">move_to_inbox</mat-icon>Pases a venta</ng-template></mat-tab>
       </mat-tab-group>
 
       <form class="filtros" [formGroup]="filtros">
@@ -126,6 +129,7 @@ function hoy(): string {
             @for (u of usuarios(); track u.id) { <mat-option [value]="u.id">{{ u.nombre }}</mat-option> }
           </mat-select>
         </mat-form-field>
+        <mat-checkbox formControlName="incluirAnuladas">Incluir anuladas</mat-checkbox>
         <div class="atajos">
           <button mat-button type="button" (click)="periodo('mes')">Este mes</button>
           <button mat-button type="button" (click)="periodo('anterior')">Mes anterior</button>
@@ -217,7 +221,7 @@ export class ReportesPage implements OnInit {
   private readonly api = inject(ApiService);
   private readonly notificacion = inject(NotificacionService);
 
-  readonly tipos: TipoReporte[] = ['ventas', 'compras', 'canjes'];
+  readonly tipos: TipoReporte[] = ['ventas', 'compras', 'canjes', 'pases'];
   readonly tipo = signal<TipoReporte>('ventas');
   readonly indice = computed(() => this.tipos.indexOf(this.tipo()));
 
@@ -242,6 +246,8 @@ export class ReportesPage implements OnInit {
     ciudadId: new FormControl<number | null>(null),
     proveedorId: new FormControl<number | null>(null),
     insumoId: new FormControl<number | null>(null),
+    /** Las anuladas se muestran con su estado, pero no suman en los totales. */
+    incluirAnuladas: new FormControl(false, { nonNullable: true }),
   });
 
   readonly columnas = computed<Columna<Fila>[]>(() =>
@@ -341,7 +347,9 @@ export class ReportesPage implements OnInit {
   /** Solo los filtros que aplican al reporte elegido. */
   private valoresFiltro(): Record<string, string | number | null> {
     const v = this.filtros.getRawValue();
-    const salida: Record<string, string | number | null> = { desde: v.desde, hasta: v.hasta, usuarioId: v.usuarioId };
+    const salida: Record<string, string | number | null> = {
+      desde: v.desde, hasta: v.hasta, usuarioId: v.usuarioId, incluirAnuladas: v.incluirAnuladas ? 1 : null,
+    };
     for (const campo of FILTROS[this.tipo()]) {
       salida[campo] = v[campo];
     }

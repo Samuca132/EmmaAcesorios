@@ -1,13 +1,15 @@
 @use '@angular/material' as mat;
 
-// Tema Material 3 con los colores de la marca (rosa del logo + naranja)
+// Tema Material 3 con los colores de la marca (rosa del logo + naranja).
+// theme-type: color-scheme genera claro y oscuro con light-dark(); TemaService
+// elige cuál aplicar cambiando color-scheme en <html>.
 html {
   color-scheme: light;
   @include mat.theme((
     color: (
       primary: mat.$magenta-palette,
       tertiary: mat.$orange-palette,
-      theme-type: light,
+      theme-type: color-scheme,
     ),
     typography: Roboto,
     density: 0,
@@ -17,6 +19,25 @@ html {
 html,
 body {
   height: 100%;
+}
+
+// Colores de los gráficos (ver pages/inicio/graficos.ts). El acento es el magenta
+// de la marca, con un paso propio para modo oscuro: el primary oscuro (#ffabf3) es
+// demasiado claro para una línea de datos. Validados con el script de la guía de
+// visualización: luminosidad, contraste ≥ 3:1 y separación para daltonismo ≥ 8.
+html {
+  --grafico-acento: light-dark(#a900a9, #d84fd0);
+  --grafico-contexto: var(--mat-sys-outline);
+  --grafico-grilla: var(--mat-sys-outline-variant);
+  --grafico-texto: var(--mat-sys-on-surface-variant);
+  --grafico-fondo: var(--mat-sys-surface);
+}
+
+// Fundido al cambiar entre modo claro y oscuro (ver TemaService)
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 400ms;
+  animation-timing-function: ease-in-out;
 }
 
 body {

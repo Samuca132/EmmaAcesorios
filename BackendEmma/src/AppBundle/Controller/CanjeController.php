@@ -7,6 +7,7 @@ use AppBundle\Repository\CanjeRepository;
 use AppBundle\Repository\InsumoRepository;
 use AppBundle\Repository\ProductoRepository;
 use AppBundle\Repository\ProveedorRepository;
+use AppBundle\Service\Anulaciones;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -38,7 +39,7 @@ class CanjeController extends ApiController
     public function listar()
     {
         return new JsonResponse(array_map(function (Canje $c) {
-            return $c->toArray();
+            return $this->conPermisos($c, $c->toArray());
         }, $this->canjes->listar()));
     }
 
@@ -102,9 +103,7 @@ class CanjeController extends ApiController
                     ->setCantidadProducto($item['cantidadProducto'])
                     ->setCantidadInsumo($item['cantidadInsumo'])
                     ->setUsuario($this->getUser());
-                $productos[$i]->descontarStock($item['cantidadProducto']);
-                $insumos[$i]->sumarStock($item['cantidadInsumo']);
-                $canje->calcularProfit($descProducto, $descInsumo);
+                $canje->aplicarStock()->calcularProfit($descProducto, $descInsumo);
                 $this->em->persist($canje);
                 $canjes[] = $canje;
             }
@@ -120,7 +119,19 @@ class CanjeController extends ApiController
         }
 
         return new JsonResponse(array_map(function (Canje $c) {
-            return $c->toArray();
+            return $this->conPermisos($c, $c->toArray());
         }, $canjes), 201);
+    }
+
+    /**
+     * POST /api/canjes/{id}/anular  {"motivo": "..."}
+     */
+    public function anular(Request $request, $id, Anulaciones $anulaciones)
+    {
+        return $this->anularOperacion($request, $anulaciones, function () use ($id) {
+            return $this->canjes->find((int) $id);
+        }, function (Canje $c) {
+            return $c->toArray();
+        });
     }
 }

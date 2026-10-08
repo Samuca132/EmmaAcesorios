@@ -16,6 +16,10 @@ dashboard:
     path: /api/dashboard
     controller: AppBundle\Controller\DashboardController::resumen
     methods: [GET]
+dashboard_graficos:
+    path: /api/dashboard/graficos
+    controller: AppBundle\Controller\DashboardController::graficos
+    methods: [GET]
 
 # ---------------- Catálogos (CRUD) ----------------
 productos:
@@ -43,6 +47,11 @@ compras_crear:
     path: /api/compras
     controller: AppBundle\Controller\CompraController::crear
     methods: [POST]
+compras_anular:
+    path: /api/compras/{id}/anular
+    controller: AppBundle\Controller\CompraController::anular
+    methods: [POST]
+    requirements: { id: '\d+' }
 
 canjes_listar:
     path: /api/canjes
@@ -52,6 +61,33 @@ canjes_crear:
     path: /api/canjes
     controller: AppBundle\Controller\CanjeController::crear
     methods: [POST]
+pases_venta_listar:
+    path: /api/pases-venta
+    controller: AppBundle\Controller\PaseVentaController::listar
+    methods: [GET]
+pases_venta_crear:
+    path: /api/pases-venta
+    controller: AppBundle\Controller\PaseVentaController::crear
+    methods: [POST]
+pases_venta_simular:
+    path: /api/pases-venta/simular
+    controller: AppBundle\Controller\PaseVentaController::simular
+    methods: [POST]
+pases_venta_ver:
+    path: /api/pases-venta/{id}
+    controller: AppBundle\Controller\PaseVentaController::ver
+    methods: [GET]
+    requirements: { id: '\d+' }
+pases_venta_anular:
+    path: /api/pases-venta/{id}/anular
+    controller: AppBundle\Controller\PaseVentaController::anular
+    methods: [POST]
+    requirements: { id: '\d+' }
+canjes_anular:
+    path: /api/canjes/{id}/anular
+    controller: AppBundle\Controller\CanjeController::anular
+    methods: [POST]
+    requirements: { id: '\d+' }
 
 ventas_listar:
     path: /api/ventas
@@ -61,6 +97,11 @@ ventas_crear:
     path: /api/ventas
     controller: AppBundle\Controller\VentaController::crear
     methods: [POST]
+ventas_anular:
+    path: /api/ventas/{id}/anular
+    controller: AppBundle\Controller\VentaController::anular
+    methods: [POST]
+    requirements: { id: '\d+' }
 ventas_ver:
     path: /api/ventas/{id}
     controller: AppBundle\Controller\VentaController::ver
@@ -72,12 +113,12 @@ reportes_ver:
     path: /api/reportes/{tipo}
     controller: AppBundle\Controller\ReporteController::ver
     methods: [GET]
-    requirements: { tipo: 'ventas|compras|canjes' }
+    requirements: { tipo: 'ventas|compras|canjes|pases' }
 reportes_excel:
     path: /api/reportes/{tipo}/excel
     controller: AppBundle\Controller\ReporteController::excel
     methods: [GET]
-    requirements: { tipo: 'ventas|compras|canjes' }
+    requirements: { tipo: 'ventas|compras|canjes|pases' }
 usuarios_listar:
     path: /api/usuarios
     controller: AppBundle\Controller\ReporteController::usuarios
@@ -111,6 +152,10 @@ admin_usuarios_password:
     controller: AppBundle\Controller\AdminUsuarioController::password
     methods: [PUT]
     requirements: { id: '\d+' }
+admin_auditoria:
+    path: /api/admin/auditoria
+    controller: AppBundle\Controller\AuditoriaController::listar
+    methods: [GET]
 admin_usuarios_borrar:
     path: /api/admin/usuarios/{id}
     controller: AppBundle\Controller\AdminUsuarioController::borrar
