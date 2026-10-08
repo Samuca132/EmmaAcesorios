@@ -9,8 +9,11 @@ Sistema de gestión (ventas, compras, canjes, stock y clientes) para Emma Acceso
 
 ## Documentación
 
-- [Documentación técnica](docs/DESARROLLO.md): arquitectura, entidades, API, seguridad, procesos y despliegue.
 - [Manual de usuario](docs/MANUAL_USUARIO.md): cómo usar el sistema día a día.
+- [Documentación técnica](docs/DOCUMENTACION_TECNICA.md): arquitectura, rutas, entidades, base de datos,
+  reglas de negocio, seguridad, despliegue y hallazgos.
+- [Documentación técnica anterior](docs/DESARROLLO.md): recetas y guía de despliegue (parcialmente
+  desactualizada, ver hallazgos en la documentación técnica).
 
 ## Puesta en marcha rápida
 
